@@ -41,6 +41,8 @@ MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 
+ENABLE_WRITER = False
+
 
 def make_controlling_agent(args, town_name):
     """ Make the controlling agent object depending on what was selected.
@@ -240,17 +242,17 @@ def collect(client, args):
     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
         settings_module.lat_noise_percent,
         settings_module.long_noise_percent)
-
-    ##### DATASET writer initialization #####
-    # here we make the full path for the dataset that is going to be created.
-    # Make dataset path
-    writer.make_dataset_path(args.data_path)
-    # We start by writing the  metadata for the entire data collection process.
-    # That basically involves writing the configuration that was set on the settings module.
-    writer.add_metadata(args.data_path, settings_module)
-    # Also write the metadata for the current episode
-    writer.add_episode_metadata(args.data_path, str(args.episode_number).zfill(5),
-                                episode_aspects)
+    if ENABLE_WRITER:
+        ##### DATASET writer initialization #####
+        # here we make the full path for the dataset that is going to be created.
+        # Make dataset path
+        writer.make_dataset_path(args.data_path)
+        # We start by writing the  metadata for the entire data collection process.
+        # That basically involves writing the configuration that was set on the settings module.
+        writer.add_metadata(args.data_path, settings_module)
+        # Also write the metadata for the current episode
+        writer.add_episode_metadata(args.data_path, str(args.episode_number).zfill(5),
+                                    episode_aspects)
 
     # We start the episode number with the one set as parameter
     episode_number = args.episode_number
@@ -327,11 +329,12 @@ def collect(client, args):
                     episode_number += 1
                 else:
                     # If the episode did go well and we were recording, delete this episode
-                    try:
-                        if not args.not_record:
-                            writer.delete_episode(args.data_path, str(episode_number).zfill(5))
-                    except:
-                        print("could not delete episode")
+                    if ENABLE_WRITER:
+                        try:
+                            if not args.not_record:
+                                writer.delete_episode(args.data_path, str(episode_number).zfill(5))
+                        except:
+                            print("could not delete episode")
                 episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
                     settings_module.lat_noise_percent,
                     settings_module.long_noise_percent)
@@ -339,20 +342,20 @@ def collect(client, args):
                 # We reset the episode and receive all the characteristics of this episode.
                 episode_aspects = reset_episode(client, carla_game,
                                                 settings_module, args.debug)
-
-                writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
+                if ENABLE_WRITER:
+                    writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
                                             episode_aspects)
 
                 # Reset the image count
                 image_count = 0
-
+            if ENABLE_WRITER:
             # We do this to avoid the frames that the car is coming from the sky.
-            if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
-                writer.add_data_point(measurements, control, control_noise_f, sensor_data,
-                                      controller_state,
-                                      args.data_path, str(episode_number).zfill(5),
-                                      str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
-                                      settings_module.sensors_frequency)
+                if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
+                    writer.add_data_point(measurements, control, control_noise_f, sensor_data,
+                                          controller_state,
+                                          args.data_path, str(episode_number).zfill(5),
+                                          str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
+                                          settings_module.sensors_frequency)
             # End the loop by sending control
             client.send_control(control_noise_f)
             # Add one more image to the counting
@@ -365,7 +368,7 @@ def collect(client, args):
         """
         import traceback
         traceback.print_exc()
-        if not args.not_record:
+        if not args.not_record and  ENABLE_WRITER:
             writer.delete_episode(args.data_path, str(episode_number).zfill(5))
 
         raise error
@@ -373,7 +376,7 @@ def collect(client, args):
     except KeyboardInterrupt:
         import traceback
         traceback.print_exc()
-        if not args.not_record:
+        if not args.not_record and ENABLE_WRITER:
             writer.delete_episode(args.data_path, str(episode_number).zfill(5))
 
 

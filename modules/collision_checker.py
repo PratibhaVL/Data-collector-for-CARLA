@@ -41,6 +41,19 @@ class CollisionChecker(object):
 
         return collided
 
+class LaneChecker(object):
+    
+    def __init__(self):
+        self._other_lane_threshold = 0.2
+        self._offroad_threshold = 0.1
+    
+    def test_lane_crossing(self, player_measurements):
+        lane_crossed = False
+        if player_measurements.intersection_otherlane > self._other_lane_threshold \
+        or player_measurements.intersection_offroad > self._offroad_threshold:
+            lane_crossed = True
+        return lane_crossed
+
 
 
 

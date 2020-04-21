@@ -32,7 +32,7 @@ from carla.agent import HumanAgent, ForwardAgent, CommandFollower, LaneFollower
 
 import modules.data_writer as writer
 from modules.noiser import Noiser
-from modules.collision_checker import CollisionChecker
+from modules.collision_checker import CollisionChecker , LaneChecker
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
@@ -226,7 +226,7 @@ def collect(client, args):
 
     # The collision checker , checks for collision at any moment.
     collision_checker = CollisionChecker()
-
+    lane_checker = LaneChecker()
     ##### Start the episode #####
     # ! This returns all the aspects from the episodes.
     episode_aspects = reset_episode(client, carla_game,
@@ -313,11 +313,12 @@ def collect(client, args):
             # Check two important conditions for the episode, if it has ended
             # and if the episode was a success
             collided = collision_checker.test_collision(measurements.player_measurements)
-            episode_ended =  collided or \
+            lane_crossed = lane_checker.test_lane_crossing(measurements.player_measurements)
+            episode_ended =  collided or lane_crossed or \
                             reach_timeout(measurements.game_timestamp / 1000.0,
                                           episode_aspects["timeout"]) or \
                             carla_game.is_reset(measurements.player_measurements.transform.location)
-            episode_success = not (collided or reach_timeout(measurements.game_timestamp / 1000.0, \
+            episode_success = not (collided or lane_crossed or reach_timeout(measurements.game_timestamp / 1000.0, \
                                                  episode_aspects["timeout"]))
 
             # Check if there is collision

@@ -39,7 +39,7 @@ WINDOW_HEIGHT = 600
 MINI_WINDOW_WIDTH = 320
 MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
-NUMBER_OF_FRAMES_CAR_FLIES = 35  # multiply by ten
+NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 
 
 def make_controlling_agent(args, town_name):
@@ -244,13 +244,13 @@ def collect(client, args):
     ##### DATASET writer initialization #####
     # here we make the full path for the dataset that is going to be created.
     # Make dataset path
-    #writer.make_dataset_path(args.data_path)
+    writer.make_dataset_path(args.data_path)
     # We start by writing the  metadata for the entire data collection process.
     # That basically involves writing the configuration that was set on the settings module.
-    #writer.add_metadata(args.data_path, settings_module)
+    writer.add_metadata(args.data_path, settings_module)
     # Also write the metadata for the current episode
-    #writer.add_episode_metadata(args.data_path, str(args.episode_number).zfill(5),
-                               # episode_aspects)
+    writer.add_episode_metadata(args.data_path, str(args.episode_number).zfill(5),
+                                episode_aspects)
 
     # We start the episode number with the one set as parameter
     episode_number = args.episode_number
@@ -347,7 +347,7 @@ def collect(client, args):
                 image_count = 0
 
             # We do this to avoid the frames that the car is coming from the sky.
-            '''if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
+            if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
                 writer.add_data_point(measurements, control, control_noise_f, sensor_data,
                                       controller_state,
                                       args.data_path, str(episode_number).zfill(5),
@@ -356,7 +356,7 @@ def collect(client, args):
             # End the loop by sending control
             client.send_control(control_noise_f)
             # Add one more image to the counting
-            image_count += 1'''
+            image_count += 1
 
     except TCPConnectionError as error:
         """

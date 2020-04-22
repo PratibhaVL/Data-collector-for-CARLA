@@ -23,7 +23,7 @@ sensors_frequency = {'CameraRGB': 1}
 sensors_yaw = {'CameraRGB': 0}
 # The percentage of episodes to have lateral noise. More information about the noise can
 # be found at docs/agent_module.md
-lat_noise_percent = 50
+lat_noise_percent = 100
 # The percentage of episodes with longitudinal noise.
 long_noise_percent = 0
 # The interval of vehicles/pedestrians that every episode can have
@@ -39,7 +39,7 @@ be sampled from the interval defined on the NumberOfVehicle and NumberOfPedestri
 This function must be redefined on each of the daset cofiguration files.
 """
 
-def make_carla_settings():
+def make_carla_settings(seeds_vehicles = None , seeds_pedestrians = None):
     """Make a CarlaSettings object with the settings we need."""
 
     settings = CarlaSettings()
@@ -48,7 +48,7 @@ def make_carla_settings():
         SynchronousMode=True)
     settings.set(DisableTwoWheeledVehicles=True)
 
-    settings.randomize_seeds()
+    settings.randomize_seeds(seeds_vehicles ,seeds_pedestrians)
     # Add a carla camera.
     camera0 = sensor.Camera('CameraRGB')
     camera0.set_image_size(WINDOW_WIDTH, WINDOW_HEIGHT)

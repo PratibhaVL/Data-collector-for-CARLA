@@ -55,13 +55,19 @@ class CarlaSettings(object):
                 raise ValueError('CarlaSettings: no key named %r' % key)
             setattr(self, key, value)
 
-    def randomize_seeds(self):
+    def randomize_seeds(self , SeedVehicles , SeedPedestrians):
         """
         Randomize the seeds of the new episode's pseudo-random number
-        generators.
+        generators. if not provided
         """
-        self.SeedVehicles = random.getrandbits(16)
-        self.SeedPedestrians = random.getrandbits(16)
+        if SeedVehicles:
+            self.SeedVehicles = SeedVehicles
+        else:
+            self.SeedVehicles =  random.getrandbits(16)
+        if SeedPedestrians:
+            self.SeedPedestrians = SeedPedestrians
+        else:
+            self.SeedPedestrians = random.getrandbits(16)
 
     def randomize_weather(self):
         """Randomized the WeatherId."""

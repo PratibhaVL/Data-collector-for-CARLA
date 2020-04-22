@@ -88,7 +88,7 @@ def get_directions(measurements, target_transform, planner):
 
 
 
-def new_episode(client, carla_settings, position, vehicle_pair, pedestrian_pair, set_of_weathers):
+def new_episode(client, carla_settings, position, number_of_vehicles, number_of_pedestrians, weather):
     """
     Start a CARLA new episode and generate a target to be pursued on this episode
     Args:
@@ -100,10 +100,7 @@ def new_episode(client, carla_settings, position, vehicle_pair, pedestrian_pair,
 
     """
 
-    # Every time the seeds for the episode are different
-    number_of_vehicles = random.randint(vehicle_pair[0], vehicle_pair[1])
-    number_of_pedestrians = random.randint(pedestrian_pair[0], pedestrian_pair[1])
-    weather = random.choice(set_of_weathers)
+    
     carla_settings.set(
         NumberOfVehicles=number_of_vehicles,
         NumberOfPedestrians=number_of_pedestrians,
@@ -145,34 +142,74 @@ def calculate_timeout(start_point, end_point, planner):
     return ((path_distance / 1000.0) / 5.0) * 3600.0 + 10.0
 
 
-def reset_episode(client, carla_game, settings_module, show_render):
+def reset_episode(client, carla_game, settings_module, show_render , random_episode , episode_aspects):
+    '''
+    The episode is randomized if no collision happened at last episode
+    otherwise a repeat of the last episode is initialized
+    '''
 
-    random_pose = random.choice(settings_module.POSITIONS)
-    town_name, player_start_spots, weather, number_of_vehicles, number_of_pedestrians, \
-        seeds_vehicles, seeds_pedestrians = new_episode(client,
-                                                        settings_module.make_carla_settings(),
-                                                        random_pose[0],
-                                                        settings_module.NumberOfVehicles,
-                                                        settings_module.NumberOfPedestrians,
-                                                        settings_module.set_of_weathers)
+    if random_episode:
+        pose = random.choice(settings_module.POSITIONS)
+        # Every time the seeds for the episode are different
+        number_of_vehicles = random.randint(settings_module.NumberOfVehicles[0], settings_module.NumberOfVehicles[1])
+        number_of_pedestrians = random.randint(settings_module.NumberOfPedestrians[0], settings_module.NumberOfPedestrians[1])
+        weather = random.choice(settings_module.set_of_weathers)
+        town_name, player_start_spots, weather, number_of_vehicles, number_of_pedestrians, \
+            seeds_vehicles, seeds_pedestrians = new_episode(client,
+                                                            settings_module.make_carla_settings(),
+                                                            pose[0],
+                                                            number_of_vehicles,
+                                                            number_of_pedestrians,
+                                                            weather)
 
-    # Here when verbose is activated we also show the rendering window.
-    carla_game.initialize_game(town_name, render_mode=show_render)
-    carla_game.start_timer()
+        # Here when verbose is activated we also show the rendering window.
+        carla_game.initialize_game(town_name, render_mode=show_render)
+        carla_game.start_timer()
 
-    # An extra planner is needed in order to calculate timeouts
-    planner = Planner(town_name)
+        # An extra planner is needed in order to calculate timeouts
+        planner = Planner(town_name)
 
-    carla_game.set_objective(player_start_spots[random_pose[1]])
+        carla_game.set_objective(player_start_spots[pose[1]])
 
-    player_target_transform = player_start_spots[random_pose[1]]
+        player_target_transform = player_start_spots[pose[1]]
 
-    last_episode_time = time.time()
+        last_episode_time = time.time()
 
-    timeout = calculate_timeout(player_start_spots[random_pose[0]],
-                                player_target_transform, planner)
+        timeout = calculate_timeout(player_start_spots[pose[0]],
+                                    player_target_transform, planner)
+        expert_points = []
+
+    else:
+        pose = episode_aspects['episode_points']
+        number_of_vehicles = episode_aspects['number_of_vehicles']
+        number_of_pedestrians = episode_aspects['number_of_pedestrians']
+        weather = episode_aspects['weather']
+        town_name, player_start_spots, weather, number_of_vehicles, number_of_pedestrians, \
+            seeds_vehicles, seeds_pedestrians = new_episode(client,
+                                                            settings_module.make_carla_settings(episode_aspects["seeds_vehicles"] ,episode_aspects["seeds_pedestrians"] ),
+                                                            pose[0],
+                                                            number_of_vehicles,
+                                                            number_of_pedestrians,
+                                                            weather)
+        carla_game.initialize_game(town_name, render_mode=show_render)
+        carla_game.start_timer()
+        # An extra planner is needed in order to calculate timeouts
+        planner = Planner(town_name)
+
+        carla_game.set_objective(player_start_spots[pose[1]])
+
+        player_target_transform = player_start_spots[pose[1]]
+
+        last_episode_time = time.time()
+
+        timeout = calculate_timeout(player_start_spots[pose[0]],
+                                    player_target_transform, planner)
+        expert_points = episode_aspects['expert_points']
+        expert_points.sort()
+
     episode_characteristics = {
         "town_name": town_name,
+        "episode_points": pose,
         "player_target_transform": player_target_transform,
         "last_episode_time": last_episode_time,
         "timeout": timeout,
@@ -180,9 +217,10 @@ def reset_episode(client, carla_game, settings_module, show_render):
         "number_of_vehicles": number_of_vehicles,
         "number_of_pedestrians": number_of_pedestrians,
         "seeds_vehicles": seeds_vehicles,
-        "seeds_pedestrians": seeds_pedestrians
+        "seeds_pedestrians": seeds_pedestrians,
+        "expert_points": expert_points
     }
-
+    print( random_episode, episode_characteristics )
     return episode_characteristics
 
 
@@ -228,16 +266,17 @@ def collect(client, args):
     collision_checker = CollisionChecker()
     lane_checker = LaneChecker()
     ##### Start the episode #####
+    random_episode = True
     # ! This returns all the aspects from the episodes.
     episode_aspects = reset_episode(client, carla_game,
-                                    settings_module, args.debug)
+                                    settings_module, args.debug , random_episode , {})
     planner = Planner(episode_aspects["town_name"])
     # We instantiate the agent, depending on the parameter
     controlling_agent = make_controlling_agent(args, episode_aspects["town_name"])
 
     # The noise object to add noise to some episodes is instanced
     longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
-    lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=0.5)
+    lateral_noiser = Noiser('Spike', frequency=25, intensity=8, min_noise_time_amount=0.5)
 
     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
         settings_module.lat_noise_percent,
@@ -256,6 +295,8 @@ def collect(client, args):
 
     # We start the episode number with the one set as parameter
     episode_number = args.episode_number
+    enable_autopilot = False
+    autopilot_counter = 0
     try:
         image_count = 0
         # The maximum episode is equal to the current episode plus the number of episodes you
@@ -271,23 +312,35 @@ def collect(client, args):
             control, controller_state = controlling_agent.run_step(measurements,
                                                        sensor_data,
                                                        [],
-                                                       episode_aspects['player_target_transform'])
+                                                       episode_aspects['player_target_transform'] , enable_autopilot)
             
             # Get the directions, also important to save those for future training
-            
+            # Check if we made infraction here last time 
+            if image_count in episode_aspects['expert_points']:
+                autopilot_counter = 0
+                enable_autopilot =True
+                print(" Enabling Autopilot ")
+            # We are in trouble some state enable autopilot
+            if enable_autopilot:
+                autopilot_counter+=1
+                if autopilot_counter > 100:
+                    enable_autopilot = False
+                    print("Disabling Autopilot")
             directions = get_directions(measurements,
                                         episode_aspects['player_target_transform'], planner)
             controller_state.update({'directions': directions})
 
-            # if this is a noisy episode, add noise to the controls
+            
+            # if this is a noisy episode, add noise to the controls 
+            # if autopilot is ON  curb all noises 
             #TODO add a function here.
-            if episode_longitudinal_noise:
+            if episode_longitudinal_noise and not enable_autopilot:
                 control_noise, _, _ = longitudinal_noiser.compute_noise(control,
                                             measurements.player_measurements.forward_speed * 3.6)
             else:
                 control_noise = control
 
-            if episode_lateral_noise:
+            if episode_lateral_noise and not enable_autopilot:
                 control_noise_f, _, _ = lateral_noiser.compute_noise(control_noise,
                                             measurements.player_measurements.forward_speed * 3.6)
             else:
@@ -321,6 +374,7 @@ def collect(client, args):
             episode_success = not (collided or lane_crossed or reach_timeout(measurements.game_timestamp / 1000.0, \
                                                  episode_aspects["timeout"]))
 
+
             # Check if there is collision
             # Start a new episode if there is a collision but repeat the same by not incrementing
             # episode number.
@@ -328,7 +382,10 @@ def collect(client, args):
             if episode_ended:
                 if episode_success:
                     episode_number += 1
+                    random_episode = True
                 else:
+                    random_episode = False
+                    episode_aspects['expert_points'].append(image_count-10)
                     # If the episode did go well and we were recording, delete this episode
                     if ENABLE_WRITER:
                         try:
@@ -342,7 +399,7 @@ def collect(client, args):
 
                 # We reset the episode and receive all the characteristics of this episode.
                 episode_aspects = reset_episode(client, carla_game,
-                                                settings_module, args.debug)
+                                                settings_module, args.debug , random_episode , episode_aspects)
                 if ENABLE_WRITER:
                     writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
                                             episode_aspects)

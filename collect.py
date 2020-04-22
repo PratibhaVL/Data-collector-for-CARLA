@@ -41,9 +41,8 @@ MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 
-ENABLE_WRITER = False 
+ENABLE_WRITER = True 
 
-# Adding 
 def make_controlling_agent(args, town_name):
     """ Make the controlling agent object depending on what was selected.
         Right now we have the following options:
@@ -290,8 +289,6 @@ def collect(client, args):
         # That basically involves writing the configuration that was set on the settings module.
         writer.add_metadata(args.data_path, settings_module)
         # Also write the metadata for the current episode
-        writer.add_episode_metadata(args.data_path, str(args.episode_number).zfill(5),
-                                    episode_aspects)
 
     # We start the episode number with the one set as parameter
     episode_number = args.episode_number
@@ -381,13 +378,21 @@ def collect(client, args):
 
             if episode_ended:
                 if episode_success:
+                    
                     episode_number += 1
                     random_episode = True
+                    episode_aspects.update({"time_taken": measurements.game_timestamp / 1000.0})
+                    if ENABLE_WRITER:
+                        writer.writeh5(args.data_path , str(episode_number).zfill(5) , image_count)
+                        writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
+                                                episode_aspects)
+                        writer.reset_file_counter()
                 else:
                     random_episode = False
                     episode_aspects['expert_points'].append(image_count-10)
                     # If the episode did go well and we were recording, delete this episode
                     if ENABLE_WRITER:
+                        writer.reset_file_counter()
                         try:
                             if not args.not_record:
                                 writer.delete_episode(args.data_path, str(episode_number).zfill(5))
@@ -400,9 +405,7 @@ def collect(client, args):
                 # We reset the episode and receive all the characteristics of this episode.
                 episode_aspects = reset_episode(client, carla_game,
                                                 settings_module, args.debug , random_episode , episode_aspects)
-                if ENABLE_WRITER:
-                    writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
-                                            episode_aspects)
+                
 
                 # Reset the image count
                 image_count = 0
@@ -412,7 +415,7 @@ def collect(client, args):
                     writer.add_data_point(measurements, control, control_noise_f, sensor_data,
                                           controller_state,
                                           args.data_path, str(episode_number).zfill(5),
-                                          str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
+                                          image_count - NUMBER_OF_FRAMES_CAR_FLIES,
                                           settings_module.sensors_frequency)
             # End the loop by sending control
             client.send_control(control_noise_f)

@@ -41,9 +41,9 @@ MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 
-ENABLE_WRITER = False
+ENABLE_WRITER = False 
 
-
+# Adding 
 def make_controlling_agent(args, town_name):
     """ Make the controlling agent object depending on what was selected.
         Right now we have the following options:

@@ -112,15 +112,14 @@ def new_episode(client, carla_settings, position, number_of_vehicles, number_of_
            carla_settings.SeedVehicles, carla_settings.SeedPedestrians
 
 
-def check_episode_has_noise(lat_noise_percent, long_noise_percent):
-    lat_noise = False
-    long_noise = False
-    if random.randint(0, 101) < lat_noise_percent:
-        lat_noise = True
-
-    if random.randint(0, 101) < long_noise_percent:
-        long_noise = True
-
+def check_episode_has_noise(episode_number,  settings_module):
+    lat_noise , long_noise = False, False
+    if settings_module.lat_noise_after > 0:
+        if not episode_number%(settings_module.lat_noise_after):
+            lat_noise = True
+    if settings_module.long_noise_after > 0:
+        if not episode_number%(settings_module.long_noise_after):
+            long_noise = True    
     return lat_noise, long_noise
 
 
@@ -275,11 +274,9 @@ def collect(client, args):
 
     # The noise object to add noise to some episodes is instanced
     longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
-    lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=0.5)
+    lateral_noiser = Noiser('Spike', frequency=15, intensity=4, min_noise_time_amount=0.5)
 
-    episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
-        settings_module.lat_noise_percent,
-        settings_module.long_noise_percent)
+    episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
     if ENABLE_WRITER:
         ##### DATASET writer initialization #####
         # here we make the full path for the dataset that is going to be created.
@@ -390,17 +387,18 @@ def collect(client, args):
                 else:
                     random_episode = False
                     episode_aspects['expert_points'].append(image_count-10)
+                    if len(episode_aspects['expert_points']) == 10: # if we repeated the same episode for 10 times skip it 
+                        random_episode = True
                     # If the episode did go well and we were recording, delete this episode
                     if ENABLE_WRITER:
                         writer.reset_file_counter()
                         try:
-                            if not args.not_record:
-                                writer.delete_episode(args.data_path, str(episode_number).zfill(5))
+                            writer.delete_episode(args.data_path, str(episode_number).zfill(5))
                         except:
                             print("could not delete episode")
                 episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
-                    settings_module.lat_noise_percent,
-                    settings_module.long_noise_percent)
+                    episode_number,
+                    settings_module)
 
                 # We reset the episode and receive all the characteristics of this episode.
                 episode_aspects = reset_episode(client, carla_game,

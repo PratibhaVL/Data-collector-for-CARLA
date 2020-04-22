@@ -8,49 +8,30 @@ import scipy
 
 FILE_SIZE = 200
 IMAGE_SIZE = [88,200,3]
-MEASUREMENTS_SIZE = 8
+TARGETS_SIZE = 28
 RGB = np.zeros((FILE_SIZE , IMAGE_SIZE[0],IMAGE_SIZE[1],IMAGE_SIZE[2]) , dtype = np.uint8)
-MEASUREMENTS = np.zeros((FILE_SIZE , MEASUREMENTS_SIZE ) , dtype = np.float32) 
+TARGETS = np.zeros((FILE_SIZE , TARGETS_SIZE ) , dtype = np.float32) 
 fileCounter = 0
-image_cut = [115, 510]
+#image_cut = [100, 500]
 def update_measurements( data_point_id, measurements, control, control_noise,
                             state):
     
-    global MEASUREMENTS
-    MEASUREMENTS[data_point_id][0] = control.steer
-    MEASUREMENTS[data_point_id][1] = control.throttle
-    MEASUREMENTS[data_point_id][2] = control.brake
-    MEASUREMENTS[data_point_id][3] = measurements.player_measurements.forward_speed
-    MEASUREMENTS[data_point_id][4] = state['directions']
-    MEASUREMENTS[data_point_id][5] = state['stop_pedestrian']
-    MEASUREMENTS[data_point_id][6] = state['stop_vehicle']
-    MEASUREMENTS[data_point_id][7] = state['stop_traffic_lights']
-    
-    
-    
-    
-    
-    '''with open(os.path.join(episode_path, 'measurements_' + data_point_id.zfill(5) + '.json'), 'w') as fo:
-            
-                    jsonObj = MessageToDict(measurements)
-                    jsonObj.update(state)
-                    jsonObj.update({'steer': control.steer})
-                    jsonObj.update({'throttle': control.throttle})
-                    jsonObj.update({'brake': control.brake})
-                    jsonObj.update({'hand_brake': control.hand_brake})
-                    jsonObj.update({'reverse': control.reverse})
-                    jsonObj.update({'steer_noise': control_noise.steer})
-                    jsonObj.update({'throttle_noise': control_noise.throttle})
-                    jsonObj.update({'brake_noise': control_noise.brake})
-            
-                    fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))'''
-
+    global TARGETS
+    TARGETS[data_point_id][0] = control.steer
+    TARGETS[data_point_id][1] = control.throttle
+    TARGETS[data_point_id][2] = control.brake
+    TARGETS[data_point_id][10] = measurements.player_measurements.forward_speed
+    TARGETS[data_point_id][24] = state['directions']
+    TARGETS[data_point_id][25] = state['stop_pedestrian']
+    TARGETS[data_point_id][26] = state['stop_vehicle']
+    TARGETS[data_point_id][27] = state['stop_traffic_lights']
+ 
 
 def update_sensor_data( data_point_id, sensor_data, sensors_frequency):
     
     global RGB
     rgb_image = sensor_data['CameraRGB'].data
-    rgb_image = rgb_image[image_cut[0]:image_cut[1], :]
+    #rgb_image = rgb_image[image_cut[0]:image_cut[1], :]
     rgb_image= scipy.misc.imresize(rgb_image, [IMAGE_SIZE[0],IMAGE_SIZE[1]])
     RGB [data_point_id]= rgb_image
 
@@ -67,8 +48,6 @@ def add_metadata(dataset_path, settings_module):
         jsonObj.update({'fov': settings_module.FOV})
         jsonObj.update({'width': settings_module.WINDOW_WIDTH})
         jsonObj.update({'height': settings_module.WINDOW_HEIGHT})
-        jsonObj.update({'lateral_noise_percentage': settings_module.lat_noise_percent})
-        jsonObj.update({'longitudinal_noise_percentage': settings_module.long_noise_percent})
         jsonObj.update({'car range': settings_module.NumberOfVehicles})
         jsonObj.update({'pedestrian range': settings_module.NumberOfPedestrians})
         jsonObj.update({'set_of_weathers': settings_module.set_of_weathers})
@@ -109,7 +88,7 @@ def add_data_point(measurements, control, control_noise, sensor_data, state,
 def writeh5(dataset_path , episode_number ,data_point_id):
     global fileCounter
     global RGB 
-    global MEASUREMENTS 
+    global TARGETS 
     if fileCounter: # For end of episode case
         data_point_id = data_point_id % (FILE_SIZE * fileCounter)
 
@@ -119,14 +98,14 @@ def writeh5(dataset_path , episode_number ,data_point_id):
 
     if data_point_id < FILE_SIZE -1: # if episode ended 
         RGB = np.resize(RGB, (data_point_id , IMAGE_SIZE[0],IMAGE_SIZE[1],IMAGE_SIZE[2]))
-        MEASUREMENTS = np.resize(MEASUREMENTS, (data_point_id , MEASUREMENTS_SIZE))
+        TARGETS = np.resize(TARGETS, (data_point_id , TARGETS_SIZE))
 
     with h5py.File(os.path.join(episode_path ,"episode_" +str(episode_number) + "_" +str(fileCounter)+".h5"), "w") as f:
         f.create_dataset('rgb', data=RGB)
-        f.create_dataset('targets', data= MEASUREMENTS)
+        f.create_dataset('targets', data= TARGETS)
     fileCounter+=1
     RGB = np.zeros((FILE_SIZE , IMAGE_SIZE[0],IMAGE_SIZE[1],IMAGE_SIZE[2]) , dtype = np.uint8)
-    MEASUREMENTS = np.zeros((FILE_SIZE , MEASUREMENTS_SIZE ) , dtype = np.float32) 
+    TARGETS = np.zeros((FILE_SIZE , TARGETS_SIZE ) , dtype = np.float32) 
 
 def reset_file_counter():
     global fileCounter

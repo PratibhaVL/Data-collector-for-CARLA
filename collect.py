@@ -276,7 +276,7 @@ def collect(client, args):
 
     # The noise object to add noise to some episodes is instanced
     longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
-    lateral_noiser = Noiser('Spike', frequency=25, intensity=8, min_noise_time_amount=0.5)
+    lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=0.5)
 
     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
         settings_module.lat_noise_percent,

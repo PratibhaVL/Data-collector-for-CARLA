@@ -381,6 +381,15 @@ def collect(client, args):
                     if episode_success:                   
                         episode_aspects.update({"time_taken": measurements.game_timestamp / 1000.0})
                         if ENABLE_WRITER:
+<<<<<<< HEAD
+=======
+                            fileCounter = writer.get_file_counter()
+                            if fileCounter:
+                                data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES) % (FILE_SIZE * fileCounter)
+                            else:
+                                data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES)
+                            writer.writeh5(args.data_path , str(episode_number).zfill(5) , data_point_id)
+>>>>>>> c0435c1... Short episode corner case handled
                             writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
                                             episode_aspects)
                         episode_number += 1

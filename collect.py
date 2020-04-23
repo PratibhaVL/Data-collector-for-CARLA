@@ -42,7 +42,7 @@ MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 FRAMES_TO_REWIND = 25
-FRAMES_GIVEN_TO_ORACLE = 25 + 25
+FRAMES_GIVEN_TO_ORACLE = 25 + 100
 ENABLE_WRITER = True 
 #FILE_SIZE = 200
 

@@ -66,8 +66,12 @@ def add_episode_metadata(dataset_path, episode_number, episode_aspects):
         jsonObj.update({'seeds_pedestrians': episode_aspects['seeds_pedestrians']})
         jsonObj.update({'seeds_vehicles': episode_aspects['seeds_vehicles']})
         jsonObj.update({'weather': episode_aspects['weather'], 
-                        'goal': episode_aspects['episode_points'] , 
-                        'time_taken': episode_aspects['time_taken']})
+                        'goal': episode_aspects['episode_points'] ,
+                        'expert_points': episode_aspects['expert_points'] ,
+                        'time_taken': episode_aspects['time_taken'],
+                        'episode_lateral_noise': episode_aspects ['episode_lateral_noise'],
+                        'episode_longitudinal_noise':episode_aspects ['episode_longitudinal_noise']
+                        })
 
         fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
 
@@ -89,8 +93,8 @@ def writeh5(dataset_path , episode_number ,data_point_id):
     global fileCounter
     global RGB 
     global TARGETS 
-    if fileCounter: # For end of episode case
-        data_point_id = data_point_id % (FILE_SIZE * fileCounter)
+    #if fileCounter: # For end of episode case
+    #    data_point_id = data_point_id % (FILE_SIZE * fileCounter)
 
     episode_path = os.path.join(dataset_path, 'episode_' + episode_number)
     if not os.path.exists(os.path.join(dataset_path, 'episode_' + episode_number)):
@@ -110,8 +114,12 @@ def writeh5(dataset_path , episode_number ,data_point_id):
 def reset_file_counter():
     global fileCounter
     fileCounter=0
-    
+def get_file_counter():
+    global fileCounter
+    return fileCounter
+
 # Delete an episode in the case
 def delete_episode(dataset_path, episode_number):
-
-    shutil.rmtree(os.path.join(dataset_path, 'episode_' + episode_number))
+    episode_path = os.path.join(dataset_path, 'episode_' + episode_number)
+    if os.path.exists(episode_path):
+        shutil.rmtree(episode_path)

@@ -35,8 +35,8 @@ lat_noise_after = 2
 # The percentage of episodes with longitudinal noise.
 long_noise_after = 0
 # The interval of vehicles/pedestrians that every episode can have
-NumberOfVehicles = [0, 50]  # The range for the random numbers that are going to be generated
-NumberOfPedestrians = [0, 50]
+NumberOfVehicles = [0, 20]  # The range for the random numbers that are going to be generated
+NumberOfPedestrians = [0, 20]
 
 set_of_weathers = [1, 3, 6, 8]
 

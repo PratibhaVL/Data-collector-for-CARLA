@@ -384,6 +384,8 @@ def collect(client, args):
                             fileCounter = writer.get_file_counter()
                             if fileCounter:
                                 data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES) % (FILE_SIZE * fileCounter)
+                            else:
+                                data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES)
                             writer.writeh5(args.data_path , str(episode_number).zfill(5) , data_point_id)
                             writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
                                                     episode_aspects)

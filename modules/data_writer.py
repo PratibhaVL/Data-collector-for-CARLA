@@ -5,6 +5,8 @@ import h5py
 import numpy as np
 from google.protobuf.json_format import MessageToJson, MessageToDict
 import scipy
+from PIL import Image as PImage
+import cv2
 
 FILE_SIZE = 200
 IMAGE_SIZE = [88,200,3]
@@ -30,10 +32,10 @@ def update_measurements( data_point_id, measurements, control, control_noise,
 def update_sensor_data( data_point_id, sensor_data, sensors_frequency):
     
     global RGB
-    rgb_image = sensor_data['CameraRGB'].data
-    #rgb_image = rgb_image[image_cut[0]:image_cut[1], :]
-    rgb_image= scipy.misc.imresize(rgb_image, [IMAGE_SIZE[0],IMAGE_SIZE[1]])
-    RGB [data_point_id]= rgb_image
+    img = sensor_data['CameraRGB'].data   
+    img = img[115:510,:]
+    img = scipy.misc.imresize(img , [88 , 200])
+    RGB [data_point_id]= img
 
 
 def make_dataset_path(dataset_path):

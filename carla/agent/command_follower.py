@@ -115,7 +115,8 @@ class CommandFollower(Agent):
                                                                     wp_angle,
                                                                     wp_vector, agents)
         if autopilot:
-            control = measurements.player_measurements.autopilot_control
+            control =  self.controller.get_autopilot_control(wp_angle, wp_angle_speed, speed_factor,
+                                                  player.forward_speed*3.6, measurements )#measurements.player_measurements.autopilot_control
         else:
             # We should run some state machine around here
             control = self.controller.get_control(wp_angle, wp_angle_speed, speed_factor,

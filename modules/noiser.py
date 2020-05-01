@@ -17,24 +17,26 @@ class Noiser(object):
         self.noise_start_time = time.time()
         self.noise_end_time = time.time() + 1
         self.min_noise_time_amount = min_noise_time_amount
-        self.noise_time_amount = min_noise_time_amount + float(random.randint(50, 200) / 100.0)
+        self.noise_time_amount = min_noise_time_amount #+ float(random.randint(50, 200) / 100.0)
         self.second_counter = time.time()
         self.steer_noise_time = 0
-        self.intensity = intensity + random.randint(-2, 2)
+        self.intensity = intensity #+ random.randint(-2, 2)
         self.remove_noise = False
         self.current_noise_mean = 0
+        self.flag = False
 
     def set_noise(self):
 
         if self.noise_type == 'Spike' or self.noise_type == 'Throttle':
 
             # flip between positive and negative
-            coin = random.randint(0, 1)
-            if coin == 0:  # negative
+            #coin = random.randint(0, 1)
+            if self.flag:  # negative
                 self.current_noise_mean = 0.001  # -random.gauss(0.05,0.02)
+                self.flag = False
             else:  # positive
                 self.current_noise_mean = -0.001  # random.gauss(0.05,0.02)
-
+                self.flag = True
     def get_noise(self):
 
         if self.noise_type == 'Spike' or self.noise_type == 'Throttle':
@@ -82,8 +84,7 @@ class Noiser(object):
             if (time.time() - self.noise_end_time) > (
                     self.noise_time_amount):  # if half the amount put passed
                 self.remove_noise = False
-                self.noise_time_amount = self.min_noise_time_amount + float(
-                    random.randint(50, 200) / 100.0)
+                self.noise_time_amount = self.min_noise_time_amount #+ float(random.randint(50, 200) / 100.0)
                 return False
             else:
                 return True

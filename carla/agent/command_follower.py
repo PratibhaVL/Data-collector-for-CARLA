@@ -52,7 +52,7 @@ class CommandFollower(Agent):
         self.obstacle_avoider = ObstacleAvoidance(self.param_obstacles,self.param_controller, town_name)
         self.controller = Controller(self.param_controller)
 
-    def run_step(self, measurements, sensor_data, directions, target ,autopilot):
+    def run_step(self, measurements, sensor_data, directions, target ,autopilot , dagger_agent):
         """
         The step function is where the action for the current simulation step is computed
         The command follower uses several
@@ -114,13 +114,15 @@ class CommandFollower(Agent):
                                                                     player.transform.orientation,
                                                                     wp_angle,
                                                                     wp_vector, agents)
-        if autopilot:
-            control = measurements.player_measurements.autopilot_control
-        else:
+        
             # We should run some state machine around here
-            control = self.controller.get_control(wp_angle, wp_angle_speed, speed_factor,
-                                                  player.forward_speed*3.6)
+        control = self.controller.get_control(wp_angle, wp_angle_speed, speed_factor,
+                                              player.forward_speed*3.6)
 
+        if autopilot:  # We only access the steer from dagger controller rest we need from the command follower
+            autopilot_control = dagger_agent.run_step(measurements, sensor_data, directions)
+            control.steer = autopilot_control.steer
+        
         # To draw the car fovs. The regions where it cares about obstacles.
         fov_list = [[self.param_obstacles['p_dist_hit_thres'],
                      self.param_obstacles['p_angle_hit_thres']],

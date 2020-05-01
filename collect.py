@@ -28,7 +28,7 @@ from carla.client import make_carla_client
 from carla.tcp import TCPConnectionError
 from carla_game.carla_game import CarlaGame
 from carla.planner import Planner
-from carla.agent import HumanAgent, ForwardAgent, CommandFollower, LaneFollower
+from carla.agent import HumanAgent, ForwardAgent, CommandFollower, LaneFollower , DaggerAgent
 
 import modules.data_writer as writer
 from modules.noiser import Noiser
@@ -42,7 +42,8 @@ MINI_WINDOW_HEIGHT = 180
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 
 ENABLE_WRITER = False
-
+AUTOPILOT_REWIND = 5
+AUTOPILOT_HANDOVER = 25
 
 def make_controlling_agent(args, town_name):
     """ Make the controlling agent object depending on what was selected.
@@ -51,7 +52,6 @@ def make_controlling_agent(args, town_name):
         Human Agent: An agent controlled by a human driver, currently only by keyboard.
 
     """
-
     if args.controlling_agent == "ForwardAgent":
         return ForwardAgent()
     elif args.controlling_agent == "HumanAgent":
@@ -63,7 +63,11 @@ def make_controlling_agent(args, town_name):
         return LaneFollower(town_name)
     else:
         raise ValueError("Selected Agent Does not exist")
-
+def make_autopilot_agent(args, town_name ):
+    if args.dagger_agent == True:
+        return DaggerAgent(town_name)
+    else:
+        return ForwardAgent()
 
 def get_directions(measurements, target_transform, planner):
     """ Function to get the high level commands and the waypoints.
@@ -273,10 +277,10 @@ def collect(client, args):
     planner = Planner(episode_aspects["town_name"])
     # We instantiate the agent, depending on the parameter
     controlling_agent = make_controlling_agent(args, episode_aspects["town_name"])
-
+    dagger_agent = make_autopilot_agent(args , episode_aspects["town_name"])
     # The noise object to add noise to some episodes is instanced
     longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
-    lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=0.5)
+    lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=2.0)
 
     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
         settings_module.lat_noise_percent,
@@ -308,11 +312,12 @@ def collect(client, args):
             measurements, sensor_data = client.read_data()
 
             # run a step for the agent. regardless of the type
-
+            directions = get_directions(measurements,
+                                        episode_aspects['player_target_transform'], planner)
             control, controller_state = controlling_agent.run_step(measurements,
                                                        sensor_data,
-                                                       [],
-                                                       episode_aspects['player_target_transform'] , enable_autopilot)
+                                                       directions,
+                                                       episode_aspects['player_target_transform'] , enable_autopilot , dagger_agent)
             
             # Get the directions, also important to save those for future training
             # Check if we made infraction here last time 
@@ -323,24 +328,23 @@ def collect(client, args):
             # We are in trouble some state enable autopilot
             if enable_autopilot:
                 autopilot_counter+=1
-                if autopilot_counter > 100:
+                if autopilot_counter > AUTOPILOT_HANDOVER :
                     enable_autopilot = False
                     print("Disabling Autopilot")
-            directions = get_directions(measurements,
-                                        episode_aspects['player_target_transform'], planner)
+            
             controller_state.update({'directions': directions})
 
             
             # if this is a noisy episode, add noise to the controls 
             # if autopilot is ON  curb all noises 
             #TODO add a function here.
-            if episode_longitudinal_noise and not enable_autopilot:
+            if episode_longitudinal_noise :
                 control_noise, _, _ = longitudinal_noiser.compute_noise(control,
                                             measurements.player_measurements.forward_speed * 3.6)
             else:
                 control_noise = control
 
-            if episode_lateral_noise and not enable_autopilot:
+            if episode_lateral_noise :
                 control_noise_f, _, _ = lateral_noiser.compute_noise(control_noise,
                                             measurements.player_measurements.forward_speed * 3.6)
             else:
@@ -385,7 +389,7 @@ def collect(client, args):
                     random_episode = True
                 else:
                     random_episode = False
-                    episode_aspects['expert_points'].append(image_count-10)
+                    episode_aspects['expert_points'].append(image_count-AUTOPILOT_REWIND)
                     # If the episode did go well and we were recording, delete this episode
                     if ENABLE_WRITER:
                         try:
@@ -482,6 +486,11 @@ def main():
              ' ForwardAgent - A trivial agent that goes forward'
              ' LaneFollower - An agent that follow lanes and stop obstacles'
              ' CommandFollower - A lane follower agent that follow commands from the planner')
+    argparser.add_argument(
+        '-dg', '--dagger_agent',
+        default=True,
+        help='Autopilot controller based on previously trained model')
+
     argparser.add_argument(
         '-db', '--debug',
         action='store_true',

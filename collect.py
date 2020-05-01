@@ -43,7 +43,7 @@ NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 
 ENABLE_WRITER = True
 AUTOPILOT_REWIND = 5
-AUTOPILOT_HANDOVER = 25
+AUTOPILOT_HANDOVER = 100
 
 def make_controlling_agent(args, town_name):
     """ Make the controlling agent object depending on what was selected.

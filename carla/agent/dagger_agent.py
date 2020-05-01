@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import os
-import scipy.misc
+import scipy
 import math
 
 import tensorflow as tf
@@ -24,7 +24,7 @@ WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 class DaggerAgent(Agent):
 
-    def __init__(self, city_name, avoid_stopping = False, memory_fraction=0.25, image_cut=[115, 510]):
+    def __init__(self, city_name, avoid_stopping = False, memory_fraction=0.5, image_cut=[115, 510]):
 
         Agent.__init__(self)
         dir_path = os.path.dirname(__file__)
@@ -34,7 +34,6 @@ class DaggerAgent(Agent):
         self._image_cut = image_cut
         tf.reset_default_graph() 
         config_gpu = tf.ConfigProto(allow_soft_placement = True)
-        config_gpu.gpu_options.allow_growth = True
         # GPU to be selected, just take zero , select GPU  with CUDA_VISIBLE_DEVICES
         config_gpu.gpu_options.visible_device_list = '0'
         config_gpu.gpu_options.per_process_gpu_memory_fraction = memory_fraction

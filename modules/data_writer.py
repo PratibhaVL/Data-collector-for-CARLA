@@ -80,7 +80,6 @@ def add_episode_metadata(dataset_path, episode_number, episode_aspects):
         jsonObj.update({'weather': episode_aspects['weather'], 
                         'goal': episode_aspects['episode_points'] ,
                         'expert_points': episode_aspects['expert_points'] ,
-                        'time_taken': episode_aspects['time_taken'],
                         'episode_lateral_noise': episode_aspects ['episode_lateral_noise'],
                         'episode_longitudinal_noise':episode_aspects ['episode_longitudinal_noise']
                         })
@@ -100,5 +99,5 @@ def add_data_point(measurements, control, control_noise, sensor_data, state,
 
 # Delete an episode in the case
 def delete_episode(dataset_path, episode_number):
-    
-    shutil.rmtree(os.path.join(dataset_path, 'episode_' + episode_number))
+    if os.path.exists(os.path.join(dataset_path, 'episode_' + episode_number)):
+        shutil.rmtree(os.path.join(dataset_path, 'episode_' + episode_number))

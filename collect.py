@@ -41,7 +41,7 @@ MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 
-ENABLE_WRITER = False
+ENABLE_WRITER = True
 AUTOPILOT_REWIND = 5
 AUTOPILOT_HANDOVER = 25
 
@@ -283,6 +283,9 @@ def collect(client, args):
     lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=2.0)
 
     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
+    episode_aspects.update({'episode_lateral_noise': episode_lateral_noise,
+                                                'episode_longitudinal_noise': episode_longitudinal_noise
+                                                })
     if ENABLE_WRITER:
         ##### DATASET writer initialization #####
         # here we make the full path for the dataset that is going to be created.
@@ -291,9 +294,6 @@ def collect(client, args):
         # We start by writing the  metadata for the entire data collection process.
         # That basically involves writing the configuration that was set on the settings module.
         writer.add_metadata(args.data_path, settings_module)
-        # Also write the metadata for the current episode
-        writer.add_episode_metadata(args.data_path, str(args.episode_number).zfill(5),
-                                    episode_aspects)
 
     # We start the episode number with the one set as parameter
     episode_number = args.episode_number
@@ -383,26 +383,28 @@ def collect(client, args):
 
             if episode_ended:
                 if episode_success:
+                    if ENABLE_WRITER:
+                        writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
+                                        episode_aspects)
                     episode_number += 1
                     random_episode = True
+                    
                 else:
                     random_episode = False
                     episode_aspects['expert_points'].append(image_count-AUTOPILOT_REWIND)
-                    # If the episode did go well and we were recording, delete this episode
+                    if len(episode_aspects['expert_points']) == 10: # if we repeated the same episode for 10 times skip it 
+                            random_episode = True
+                    # If the episode did not go well and we were recording, delete this episode
                     if ENABLE_WRITER:
-                        try:
-                            if not args.not_record:
-                                writer.delete_episode(args.data_path, str(episode_number).zfill(5))
-                        except:
-                            print("could not delete episode")
-                episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
-                # We reset the episode and receive all the characteristics of this episode.
+                            writer.delete_episode(args.data_path, str(episode_number).zfill(5))
+                episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(episode_number ,settings_module)
+                # We reset the episode and receive all the characteristics of this episode.                                                                                                                                                                                                                                                                                                                                                                                                                                     
                 episode_aspects = reset_episode(client, carla_game,
                                                 settings_module, args.debug , random_episode , episode_aspects)
-                if ENABLE_WRITER:
-                    writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
-                                            episode_aspects)
-
+                episode_aspects.update({'episode_lateral_noise': episode_lateral_noise,
+                                                'episode_longitudinal_noise': episode_longitudinal_noise
+                                                })
+                
                 # Reset the image count
                 image_count = 0
             if ENABLE_WRITER:
@@ -417,7 +419,6 @@ def collect(client, args):
             client.send_control(control_noise_f)
             # Add one more image to the counting
             image_count += 1
-
     except TCPConnectionError as error:
         """
         If there is any connection error we delete the current episode, 
@@ -425,10 +426,12 @@ def collect(client, args):
         """
         import traceback
         traceback.print_exc()
-        if not args.not_record and  ENABLE_WRITER:
+
+        if not args.not_record and  ENABLE_WRITER :
             writer.delete_episode(args.data_path, str(episode_number).zfill(5))
 
-        raise error
+        raise error 
+
 
     except KeyboardInterrupt:
         import traceback
@@ -533,15 +536,12 @@ def main():
     logging.info('listening to server %s:%s', args.host, args.port)
 
     while True:
-        try:
 
             with make_carla_client(args.host, args.port) as client:
                 collect(client, args)
                 break
 
-        except TCPConnectionError as error:
-            logging.error(error)
-            time.sleep(1)
+        
 
 
 if __name__ == '__main__':

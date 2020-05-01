@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import os
-import scipy
+import scipy.misc
 import math
 
 import tensorflow as tf

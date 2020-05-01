@@ -395,10 +395,7 @@ def collect(client, args):
                                 writer.delete_episode(args.data_path, str(episode_number).zfill(5))
                         except:
                             print("could not delete episode")
-                episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
-                    settings_module.lat_noise_percent,
-                    settings_module.long_noise_percent)
-
+                episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
                 # We reset the episode and receive all the characteristics of this episode.
                 episode_aspects = reset_episode(client, carla_game,
                                                 settings_module, args.debug , random_episode , episode_aspects)

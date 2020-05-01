@@ -32,7 +32,7 @@ sensors_frequency = {'CameraRGB': 1}
 sensors_yaw = {'CameraRGB': 0}
 # The percentage of episodes to have lateral noise. More information about the noise can
 # be found at docs/agent_module.md
-lat_noise_after = 2 
+lat_noise_after = 1 
 # The percentage of episodes with longitudinal noise.
 long_noise_after = 0
 # The interval of vehicles/pedestrians that every episode can have

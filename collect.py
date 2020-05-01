@@ -31,7 +31,6 @@ from carla.planner import Planner
 from carla.agent import HumanAgent, ForwardAgent, CommandFollower, LaneFollower
 
 import modules.data_writer as writer
-from modules.data_writer import FILE_SIZE
 from modules.noiser import Noiser
 from modules.collision_checker import CollisionChecker , LaneChecker
 
@@ -41,8 +40,8 @@ MINI_WINDOW_WIDTH = 320
 MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
-FRAMES_TO_REWIND = 25
-FRAMES_GIVEN_TO_ORACLE = 25 + 100
+FRAMES_TO_REWIND = 5
+FRAMES_GIVEN_TO_ORACLE = 25
 ENABLE_WRITER = True 
 #FILE_SIZE = 200
 
@@ -297,13 +296,14 @@ def collect(client, args):
     episode_number = args.episode_number
     enable_autopilot = False
     autopilot_counter = 0
-    
+    lastTimeStamp=0
     image_count = 0
+    datapoint_count = 0
     # The maximum episode is equal to the current episode plus the number of episodes you
     # want to run
-    maximun_episode = int(args.number_of_episodes) + int(args.episode_number)
+    maximum_episode = int(args.number_of_episodes) + int(args.episode_number)
     try:
-        while carla_game.is_running() and episode_number < maximun_episode:
+        while carla_game.is_running() and episode_number < maximum_episode:
             try:
                 # we add the vehicle and the connection outside of the game.
                 measurements, sensor_data = client.read_data()
@@ -381,14 +381,8 @@ def collect(client, args):
                     if episode_success:                   
                         episode_aspects.update({"time_taken": measurements.game_timestamp / 1000.0})
                         if ENABLE_WRITER:
-                            fileCounter = writer.get_file_counter()
-                            if fileCounter:
-                                data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES) % (FILE_SIZE * fileCounter)
-                            else:
-                                data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES)
-                            writer.writeh5(args.data_path , str(episode_number).zfill(5) , data_point_id)
                             writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
-                                                    episode_aspects)
+                                            episode_aspects)
                         episode_number += 1
                         random_episode = True
                             
@@ -399,8 +393,6 @@ def collect(client, args):
                             random_episode = True
                         if ENABLE_WRITER:
                             writer.delete_episode(args.data_path, str(episode_number).zfill(5))
-                    if ENABLE_WRITER:
-                        writer.reset_file_counter()
                     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
                         episode_number,
                         settings_module)
@@ -414,14 +406,17 @@ def collect(client, args):
                     
                     # Reset the image count
                     image_count = 0
+                    datapoint_count = 0
+                    lastTimeStamp = 0
                 if ENABLE_WRITER:
-                # We do this to avoid the frames that the car is coming from the sky.
                     if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
+                        # We do this to avoid the frames that the car is coming from the sky.
                         writer.add_data_point(measurements, control, control_noise_f, sensor_data,
-                                              controller_state,
-                                              args.data_path, str(episode_number).zfill(5),
-                                              image_count - NUMBER_OF_FRAMES_CAR_FLIES,
-                                              settings_module.sensors_frequency)
+                                      controller_state,
+                                      args.data_path, str(episode_number).zfill(5),
+                                      str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
+                                      settings_module.sensors_frequency)
+                            
                 # End the loop by sending control
                 client.send_control(control_noise_f)
                 # Add one more image to the counting

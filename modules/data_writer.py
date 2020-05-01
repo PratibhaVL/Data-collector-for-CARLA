@@ -1,27 +1,29 @@
 import os
 import json
 import shutil
-
+##Added by pankaj
+import cv2
+import scipy 
+##
 from google.protobuf.json_format import MessageToJson, MessageToDict
-
+import numpy as np
+def _append_extension(filename, ext):
+    return filename if filename.lower().endswith(ext.lower()) else filename + ext
 
 def write_json_measurements(episode_path, data_point_id, measurements, control, control_noise,
                             state):
 
     with open(os.path.join(episode_path, 'measurements_' + data_point_id.zfill(5) + '.json'), 'w') as fo:
-
-        jsonObj = MessageToDict(measurements)
-        jsonObj.update(state)
-        jsonObj.update({'steer': control.steer})
-        jsonObj.update({'throttle': control.throttle})
-        jsonObj.update({'brake': control.brake})
-        jsonObj.update({'hand_brake': control.hand_brake})
-        jsonObj.update({'reverse': control.reverse})
-        jsonObj.update({'steer_noise': control_noise.steer})
-        jsonObj.update({'throttle_noise': control_noise.throttle})
-        jsonObj.update({'brake_noise': control_noise.brake})
-
-        fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
+        data = {'steer':control.steer,
+                'throttle': control.throttle,
+                 'brake': control.brake,
+                 'direction': state['directions'], 
+                 'stop_pedestrian': state['stop_pedestrian'],
+                 'stop_traffic_lights':state['stop_traffic_lights'],
+                 'stop_vehicle': state['stop_vehicle'] ,
+                 'speed' : measurements.player_measurements.forward_speed}
+                     
+        fo.write(json.dumps(data, sort_keys=True, indent=4))
 
 
 def write_sensor_data(episode_path, data_point_id, sensor_data, sensors_frequency):
@@ -31,15 +33,18 @@ def write_sensor_data(episode_path, data_point_id, sensor_data, sensors_frequenc
         raise RuntimeError(
             'cannot import PIL, make sure pillow package is installed')
 
-    for name, data in sensor_data.items():
-        if int(data_point_id) % int((1/sensors_frequency[name])) == 0:
-            format = '.png'
-            if 'RGB' in name:
-                format = '.png'
-            if 'Lidar' in name:
-                format = '.ply'
-            data.save_to_disk(os.path.join(episode_path, name + '_' + data_point_id.zfill(5)), format)
-
+    name = 'CameraRGB'
+    filename = _append_extension( os.path.join(episode_path, name + '_' + data_point_id.zfill(5)), '.png')
+    img = sensor_data['CameraRGB'].data   
+    img = img[115:510,:]
+    img = scipy.misc.imresize(img , [88 , 200])
+    folder = os.path.dirname (filename)
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+    cv2.imwrite(filename ,cv2.cvtColor(img, cv2.COLOR_RGB2BGR) )
+    
+    
+                          
 
 def make_dataset_path(dataset_path):
     if not os.path.exists(dataset_path):
@@ -53,8 +58,8 @@ def add_metadata(dataset_path, settings_module):
         jsonObj.update({'fov': settings_module.FOV})
         jsonObj.update({'width': settings_module.WINDOW_WIDTH})
         jsonObj.update({'height': settings_module.WINDOW_HEIGHT})
-        jsonObj.update({'lateral_noise_percentage': settings_module.lat_noise_percent})
-        jsonObj.update({'longitudinal_noise_percentage': settings_module.long_noise_percent})
+        jsonObj.update({'lateral_noise': settings_module.lat_noise_after})
+        jsonObj.update({'longitudinal_noise': settings_module.long_noise_after})
         jsonObj.update({'car range': settings_module.NumberOfVehicles})
         jsonObj.update({'pedestrian range': settings_module.NumberOfPedestrians})
         jsonObj.update({'set_of_weathers': settings_module.set_of_weathers})
@@ -72,7 +77,13 @@ def add_episode_metadata(dataset_path, episode_number, episode_aspects):
         jsonObj.update({'number_of_vehicles': episode_aspects['number_of_vehicles']})
         jsonObj.update({'seeds_pedestrians': episode_aspects['seeds_pedestrians']})
         jsonObj.update({'seeds_vehicles': episode_aspects['seeds_vehicles']})
-        jsonObj.update({'weather': episode_aspects['weather']})
+        jsonObj.update({'weather': episode_aspects['weather'], 
+                        'goal': episode_aspects['episode_points'] ,
+                        'expert_points': episode_aspects['expert_points'] ,
+                        'time_taken': episode_aspects['time_taken'],
+                        'episode_lateral_noise': episode_aspects ['episode_lateral_noise'],
+                        'episode_longitudinal_noise':episode_aspects ['episode_longitudinal_noise']
+                        })
         fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
 
 
@@ -89,5 +100,5 @@ def add_data_point(measurements, control, control_noise, sensor_data, state,
 
 # Delete an episode in the case
 def delete_episode(dataset_path, episode_number):
-
+    
     shutil.rmtree(os.path.join(dataset_path, 'episode_' + episode_number))

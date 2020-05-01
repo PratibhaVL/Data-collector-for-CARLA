@@ -41,23 +41,25 @@ class Noiser(object):
             if self.current_noise_mean > 0:
 
                 return min(0.55,
-                           self.current_noise_mean + 0.03 * self.intensity)
+                           self.current_noise_mean + (
+                                   time.time() - self.noise_start_time) * 0.03 * self.intensity)
             else:
 
                 return max(-0.55,
-                           self.current_noise_mean - 0.03 * self.intensity)
+                           self.current_noise_mean - (
+                                   time.time() - self.noise_start_time) * 0.03 * self.intensity)
 
     def get_noise_removing(self):
         # print 'REMOVING'
-        
+        added_noise = (self.noise_end_time - self.noise_start_time) * 0.02 * self.intensity
         # print added_noise
         if self.noise_type == 'Spike' or self.noise_type == 'Throttle':
             if self.current_noise_mean > 0:
-                added_noise = min(0.55,self.current_noise_mean)
-                return added_noise - 0.03 * self.intensity
+                added_noise = min(0.55, added_noise + self.current_noise_mean)
+                return added_noise - (time.time() - self.noise_end_time) * 0.03 * self.intensity
             else:
-                added_noise = max(-0.55, self.current_noise_mean)
-                return added_noise +  0.03 * self.intensity
+                added_noise = max(-0.55, self.current_noise_mean - added_noise)
+                return added_noise + (time.time() - self.noise_end_time) * 0.03 * self.intensity
 
     def is_time_for_noise(self, steer):
 
@@ -67,7 +69,7 @@ class Noiser(object):
             second_passed = True
             self.second_counter = time.time()
 
-        if  not self.remove_noise and self.noise_being_set:
+        if time.time() - self.noise_start_time >= self.noise_time_amount and not self.remove_noise and self.noise_being_set:
             self.noise_being_set = False
             self.remove_noise = True
             self.noise_end_time = time.time()
@@ -76,7 +78,7 @@ class Noiser(object):
             return True
 
         if self.remove_noise:
-            # print "TIME REMOVING ",(  time.time()-self.noise_end_time)
+            # print "TIME REMOVING ",(time.time()-self.noise_end_time)
             if (time.time() - self.noise_end_time) > (
                     self.noise_time_amount):  # if half the amount put passed
                 self.remove_noise = False

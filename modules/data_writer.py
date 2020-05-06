@@ -12,7 +12,7 @@ TARGETS_SIZE = 28
 RGB = np.zeros((FILE_SIZE , IMAGE_SIZE[0],IMAGE_SIZE[1],IMAGE_SIZE[2]) , dtype = np.uint8)
 TARGETS = np.zeros((FILE_SIZE , TARGETS_SIZE ) , dtype = np.float32) 
 fileCounter = 0
-#image_cut = [100, 500]
+image_cut = [115, 510]
 def update_measurements( data_point_id, measurements, control, control_noise,
                             state):
     
@@ -20,6 +20,7 @@ def update_measurements( data_point_id, measurements, control, control_noise,
     TARGETS[data_point_id][0] = control.steer
     TARGETS[data_point_id][1] = control.throttle
     TARGETS[data_point_id][2] = control.brake
+    TARGETS[data_point_id][3] = measurements.game_timestamp /1000
     TARGETS[data_point_id][10] = measurements.player_measurements.forward_speed
     TARGETS[data_point_id][24] = state['directions']
     TARGETS[data_point_id][25] = state['stop_pedestrian']
@@ -31,7 +32,7 @@ def update_sensor_data( data_point_id, sensor_data, sensors_frequency):
     
     global RGB
     rgb_image = sensor_data['CameraRGB'].data
-    #rgb_image = rgb_image[image_cut[0]:image_cut[1], :]
+    rgb_image = rgb_image[image_cut[0]:image_cut[1], :]
     rgb_image= scipy.misc.imresize(rgb_image, [IMAGE_SIZE[0],IMAGE_SIZE[1]])
     RGB [data_point_id]= rgb_image
 

@@ -53,16 +53,19 @@ class ObstacleAvoidance(object):
         active_agents_ids = []  # The list of pedestrians that are on roads or nearly on roads
         speed_dict = {}
         speed_limit = 0
+        crossed_traffic_light_state = False
         for agent in agents:
             if agent.HasField('traffic_light') and self.param['stop4TL']:
-                if self.is_traffic_light_active(location, agent,
-                                                orientation) and self.is_traffic_light_visible(
-                                                                 location, agent):
-                    speed_factor_tl = self.stop_traffic_light(location, agent, wp_vector,
-                                                              wp_angle, speed_factor_tl)
+                if self.is_traffic_light_active(location, agent,orientation): 
+                    if self.is_traffic_light_visible(location, agent):
+                        speed_factor_tl = self.stop_traffic_light(location, agent, wp_vector,
+                                                                  wp_angle, speed_factor_tl)
 
                     #if agent.traffic_light.state != 0:
                     #    active_agents_ids.append(agent.id)
+                    else:
+                        if agent.traffic_light.state!=0:
+                            crossed_traffic_light_state = True
 
             elif agent.HasField('pedestrian') and self.param['stop4P']:
                 if self.is_pedestrian_hitable(agent.pedestrian):
@@ -88,6 +91,7 @@ class ObstacleAvoidance(object):
             'stop_pedestrian': speed_factor_p,
             'stop_vehicle': speed_factor_v,
             'stop_traffic_lights': speed_factor_tl,
+            'traffic_light_crossed_on_red': crossed_traffic_light_state
         }# 'active_agents_ids': active_agents_ids, <<Removed to speed up 
 
         return speed_factor, state
@@ -100,6 +104,15 @@ class ObstacleAvoidance(object):
 
         x_agent = agent.speed_limit_sign.transform.location.x
         y_agent = agent.speed_limit_sign.transform.location.y
+
+        _, tl_dist = get_vec_dist(x_agent, y_agent, location.x, location.y)
+
+        return tl_dist < (self.param['tl_min_dist_thres'])
+
+    def is_traffic_light_in_passing(self, location, agent):
+
+        x_agent = agent.traffic_light.transform.location.x
+        y_agent = agent.traffic_light.transform.location.y
 
         _, tl_dist = get_vec_dist(x_agent, y_agent, location.x, location.y)
 

@@ -42,8 +42,8 @@ MINI_WINDOW_WIDTH = 320
 MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
-FRAMES_TO_REWIND = 25
-FRAMES_GIVEN_TO_ORACLE = 25 + 25
+FRAMES_TO_REWIND = 5
+FRAMES_GIVEN_TO_ORACLE = 25
 ENABLE_WRITER = True 
 #FILE_SIZE = 200
 
@@ -272,7 +272,8 @@ def collect(client, args):
 
     # The noise object to add noise to some episodes is instanced
     longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
-    lateral_noiser = Noiser('Spike', frequency=15, intensity=3, min_noise_time_amount=0.5)
+    lateral_noiser = Noiser('Spike', frequency=15, intensity=4, min_noise_time_amount=2.0)
+
 
     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
     episode_aspects.update({
@@ -331,13 +332,13 @@ def collect(client, args):
                 # if this is a noisy episode, add noise to the controls 
                 # if autopilot is ON  curb all noises 
                 #TODO add a function here.
-                if episode_longitudinal_noise and not enable_autopilot:
+                if episode_longitudinal_noise:
                     control_noise, _, _ = longitudinal_noiser.compute_noise(control,
                                                 measurements.player_measurements.forward_speed * 3.6)
                 else:
                     control_noise = control
 
-                if episode_lateral_noise and not enable_autopilot:
+                if episode_lateral_noise :
                     control_noise_f, _, _ = lateral_noiser.compute_noise(control_noise,
                                                 measurements.player_measurements.forward_speed * 3.6)
                 else:
@@ -365,8 +366,8 @@ def collect(client, args):
                 collided = collision_checker.test_collision(measurements.player_measurements)
                 lane_crossed = lane_checker.test_lane_crossing(measurements.player_measurements)
                 episode_ended =  collided or lane_crossed  or \
-                                carla_game.is_reset(measurements.player_measurements.transform.location)
-                episode_success = not (collided or lane_crossed )
+                                carla_game.is_reset(measurements.player_measurements.transform.location) #or controller_state['traffic_light_crossed_on_red']
+                episode_success = not (collided or lane_crossed  )# or controller_state['traffic_light_crossed_on_red']
 
 
                 # Check if there is collision
@@ -391,7 +392,7 @@ def collect(client, args):
                     else:
                         random_episode = False
                         episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
-                        if len(episode_aspects['expert_points']) == 10: # if we repeated the same episode for 10 times skip it 
+                        if len(episode_aspects['expert_points']) == 5: # if we repeated the same episode for 5 times skip it 
                             random_episode = True
                         if ENABLE_WRITER:
                             writer.delete_episode(args.data_path, str(episode_number).zfill(5))

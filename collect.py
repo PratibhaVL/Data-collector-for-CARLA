@@ -141,14 +141,16 @@ def calculate_timeout(start_point, end_point, planner):
     return ((path_distance / 1000.0) / 5.0) * 3600.0 + 10.0
 
 
-def reset_episode(client, carla_game, settings_module, show_render , random_episode , episode_aspects):
+def reset_episode(client, carla_game, settings_module, show_render , random_episode , episode_aspects , episode_number):
     '''
     The episode is randomized if no collision happened at last episode
     otherwise a repeat of the last episode is initialized
     '''
 
     if random_episode:
-        pose = random.choice(settings_module.POSITIONS)
+        while episode_number >=len(settings_module.POSITIONS): 
+            episode_number = episode_number % len(settings_module.POSITIONS)
+        pose = settings_module.POSITIONS[episode_number]
         # Every time the seeds for the episode are different
         number_of_vehicles = random.randint(settings_module.NumberOfVehicles[0], settings_module.NumberOfVehicles[1])
         number_of_pedestrians = random.randint(settings_module.NumberOfPedestrians[0], settings_module.NumberOfPedestrians[1])
@@ -265,7 +267,7 @@ def collect(client, args):
     random_episode = True
     # ! This returns all the aspects from the episodes.
     episode_aspects = reset_episode(client, carla_game,
-                                    settings_module, args.debug , random_episode , {})
+                                    settings_module, args.debug , random_episode , {},args.episode_number)
     planner = Planner(episode_aspects["town_name"])
     # We instantiate the agent, depending on the parameter
     controlling_agent = make_controlling_agent(args, episode_aspects["town_name"])
@@ -403,7 +405,7 @@ def collect(client, args):
                         settings_module)
                     # We reset the episode and receive all the characteristics of this episode.
                     episode_aspects = reset_episode(client, carla_game,
-                                                    settings_module, args.debug , random_episode , episode_aspects)
+                                                    settings_module, args.debug , random_episode , episode_aspects , episode_number)
                     
                     episode_aspects.update({'episode_lateral_noise': episode_lateral_noise,
                                                 'episode_longitudinal_noise': episode_longitudinal_noise

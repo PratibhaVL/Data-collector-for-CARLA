@@ -46,7 +46,7 @@ FRAMES_TO_REWIND = 5
 FRAMES_GIVEN_TO_ORACLE = 25
 ENABLE_WRITER = True 
 #FILE_SIZE = 200
-
+MAX_EXPERT_TAKEOVERS = 3
 def make_controlling_agent(args, town_name):
     """ Make the controlling agent object depending on what was selected.
         Right now we have the following options:
@@ -394,7 +394,7 @@ def collect(client, args):
                     else:
                         random_episode = False
                         episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
-                        if len(episode_aspects['expert_points']) == 5: # if we repeated the same episode for 5 times skip it 
+                        if len(episode_aspects['expert_points']) >= MAX_EXPERT_TAKEOVERS: # if we repeated the same episode for  times skip it 
                             random_episode = True
                         if ENABLE_WRITER:
                             writer.delete_episode(args.data_path, str(episode_number).zfill(5))

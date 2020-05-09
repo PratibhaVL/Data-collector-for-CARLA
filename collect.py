@@ -296,7 +296,7 @@ def collect(client, args):
     episode_number = args.episode_number
     enable_autopilot = False
     autopilot_counter = 0
-    
+    noisy_episode = True    
     image_count = 0
     # The maximum episode is equal to the current episode plus the number of episodes you
     # want to run
@@ -334,13 +334,13 @@ def collect(client, args):
                 # if this is a noisy episode, add noise to the controls 
                 # if autopilot is ON  curb all noises 
                 #TODO add a function here.
-                if episode_longitudinal_noise:
+                if episode_longitudinal_noise and noisy_episode:
                     control_noise, _, _ = longitudinal_noiser.compute_noise(control,
                                                 measurements.player_measurements.forward_speed * 3.6)
                 else:
                     control_noise = control
 
-                if episode_lateral_noise :
+                if episode_lateral_noise and noisy_episode:
                     control_noise_f, _, _ = lateral_noiser.compute_noise(control_noise,
                                                 measurements.player_measurements.forward_speed * 3.6)
                 else:
@@ -390,10 +390,11 @@ def collect(client, args):
                                                     episode_aspects)
                         episode_number += 1
                         random_episode = True
-                            
+                        noisy_episode = True
                     else:
                         random_episode = False
                         episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
+                        noisy_episode = ~noisy_episode
                         if len(episode_aspects['expert_points']) >= MAX_EXPERT_TAKEOVERS: # if we repeated the same episode for n times skip it 
                             random_episode = True
                             episode_number += 1

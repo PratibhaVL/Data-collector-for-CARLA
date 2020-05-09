@@ -394,7 +394,7 @@ def collect(client, args):
                     else:
                         random_episode = False
                         episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
-                        noisy_episode = ~noisy_episode
+                        noisy_episode = not noisy_episode
                         if len(episode_aspects['expert_points']) >= MAX_EXPERT_TAKEOVERS: # if we repeated the same episode for n times skip it 
                             random_episode = True
                             episode_number += 1

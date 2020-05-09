@@ -318,7 +318,7 @@ def collect(client, args):
                 # Check if we made infraction here last time 
                 if image_count in episode_aspects['expert_points']:
                     autopilot_counter = 0
-                    enable_autopilot =True
+                    enable_autopilot =False # Turning off for now
                     print(" Enabling Autopilot ")
                 # We are in trouble some state enable autopilot
                 if enable_autopilot:

@@ -394,8 +394,9 @@ def collect(client, args):
                     else:
                         random_episode = False
                         episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
-                        if len(episode_aspects['expert_points']) >= MAX_EXPERT_TAKEOVERS: # if we repeated the same episode for  times skip it 
+                        if len(episode_aspects['expert_points']) >= MAX_EXPERT_TAKEOVERS: # if we repeated the same episode for n times skip it 
                             random_episode = True
+                            episode_number += 1
                         if ENABLE_WRITER:
                             writer.delete_episode(args.data_path, str(episode_number).zfill(5))
                     if ENABLE_WRITER:

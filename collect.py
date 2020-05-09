@@ -274,7 +274,7 @@ def collect(client, args):
 
     # The noise object to add noise to some episodes is instanced
     longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
-    lateral_noiser = Noiser('Spike', frequency=25, intensity=3, min_noise_time_amount=2.0)
+    lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=2.0)
 
 
     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
@@ -395,11 +395,12 @@ def collect(client, args):
                         random_episode = False
                         episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
                         noisy_episode = not noisy_episode
+                        if ENABLE_WRITER:
+                            writer.delete_episode(args.data_path, str(episode_number).zfill(5))
                         if len(episode_aspects['expert_points']) >= MAX_EXPERT_TAKEOVERS: # if we repeated the same episode for n times skip it 
                             random_episode = True
                             episode_number += 1
-                        if ENABLE_WRITER:
-                            writer.delete_episode(args.data_path, str(episode_number).zfill(5))
+                        
                     if ENABLE_WRITER:
                         writer.reset_file_counter()
                     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(

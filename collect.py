@@ -32,9 +32,10 @@ from carla.planner import Planner
 from carla.agent import HumanAgent, ForwardAgent, CommandFollower, LaneFollower
 
 import modules.data_writer as writer
-from modules.data_writer import FILE_SIZE
+from modules.data_writer import FILE_SIZE , WRITE_H5
 from modules.noiser import Noiser
 from modules.collision_checker import CollisionChecker , LaneChecker
+
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
@@ -113,7 +114,9 @@ def new_episode(client, carla_settings, position, number_of_vehicles, number_of_
            carla_settings.SeedVehicles, carla_settings.SeedPedestrians
 
 
-def check_episode_has_noise(episode_number,  settings_module):
+def check_episode_has_noise(episode_number,  settings_module ,noisy_episode):
+    if not noisy_episode:
+        return False , False
     lat_noise , long_noise = False, False
     if settings_module.lat_noise_after > 0:
         if not episode_number%(settings_module.lat_noise_after):
@@ -274,10 +277,10 @@ def collect(client, args):
 
     # The noise object to add noise to some episodes is instanced
     longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
-    lateral_noiser = Noiser('Spike', frequency=25, intensity=4, min_noise_time_amount=2.0)
+    lateral_noiser = Noiser('Spike', frequency=50, intensity=3, min_noise_time_amount=2.0)
 
 
-    episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
+    episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module , True)
     episode_aspects.update({
     'episode_lateral_noise': episode_lateral_noise,
     'episode_longitudinal_noise': episode_longitudinal_noise
@@ -380,12 +383,13 @@ def collect(client, args):
                     if episode_success:                   
                         episode_aspects.update({"time_taken": measurements.game_timestamp / 1000.0})
                         if ENABLE_WRITER:
-                            fileCounter = writer.get_file_counter()
-                            if fileCounter:
-                                data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES) % (FILE_SIZE * fileCounter)
-                            else:
-                                data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES)
-                            writer.writeh5(args.data_path , str(episode_number).zfill(5) , data_point_id)
+                            #if WRITE_H5:
+                            '''fileCounter = writer.get_file_counter()
+                                                                                                                if fileCounter:
+                                                                                                                    data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES) % (FILE_SIZE * fileCounter)
+                                                                                                                else:
+                                                                                                                    data_point_id = (image_count - NUMBER_OF_FRAMES_CAR_FLIES)
+                                                                                                                writer.writeh5(args.data_path , str(episode_number).zfill(5) , data_point_id)'''
                             writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
                                                     episode_aspects)
                         episode_number += 1
@@ -405,7 +409,7 @@ def collect(client, args):
                         writer.reset_file_counter()
                     episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
                         episode_number,
-                        settings_module)
+                        settings_module , noisy_episode)
                     # We reset the episode and receive all the characteristics of this episode.
                     episode_aspects = reset_episode(client, carla_game,
                                                     settings_module, args.debug , random_episode , episode_aspects , episode_number)
@@ -419,11 +423,18 @@ def collect(client, args):
                 if ENABLE_WRITER:
                 # We do this to avoid the frames that the car is coming from the sky.
                     if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
+                        #if WRITE_H5:
                         writer.add_data_point(measurements, control, control_noise_f, sensor_data,
                                               controller_state,
                                               args.data_path, str(episode_number).zfill(5),
                                               image_count - NUMBER_OF_FRAMES_CAR_FLIES,
                                               settings_module.sensors_frequency)
+                        #else:
+                        #    writer.add_data_point(measurements, control, control_noise_f, sensor_data,
+                        #                      controller_state,
+                        #                      args.data_path, str(episode_number).zfill(5),
+                        #                      str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
+                        #                      settings_module.sensors_frequency)
                 # End the loop by sending control
                 client.send_control(control_noise_f)
                 # Add one more image to the counting

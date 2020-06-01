@@ -54,7 +54,7 @@ long_noise_after = 0
 NumberOfVehicles = [0, 20]  # The range for the random numbers that are going to be generated
 NumberOfPedestrians = [0, 20]
 
-set_of_weathers = [1, 3, 6, 8]
+set_of_weathers = [1]
 
 """
 Returns the entire CarlaSettings to be used on all the episodes.

@@ -413,7 +413,7 @@ def collect(client, args):
                     # We reset the episode and receive all the characteristics of this episode.
                     episode_aspects = reset_episode(client, carla_game,
                                                     settings_module, args.debug , random_episode , episode_aspects , episode_number)
-                    
+                    controlling_agent.param_controller['target_speed'] = 30
                     episode_aspects.update({'episode_lateral_noise': episode_lateral_noise,
                                                 'episode_longitudinal_noise': episode_longitudinal_noise
                                                 })

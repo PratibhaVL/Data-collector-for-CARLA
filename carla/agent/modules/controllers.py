@@ -60,12 +60,11 @@ class Controller(object):
         #       control.brake, 'Steering Angle: ', control.steer)
 
         return control
-    def get_autopilot_control(self, wp_angle, wp_angle_speed, speed_factor, current_speed , measurements):
+    def get_model_control(self, wp_angle, wp_angle_speed, speed_factor, current_speed ,steer ,acc,brake) :
+        # NOTE! All the calculations inside this function are made assuming speed in Km/h
         control = VehicleControl()
         current_speed = max(current_speed, 0)
 
-        
-        steer = measurements.player_measurements.autopilot_control.steer
         if steer > 0:
             control.steer = min(steer, 1)
         else:
@@ -82,22 +81,26 @@ class Controller(object):
 
         self.pid.target = target_speed_adjusted
         pid_gain = self.pid(feedback=current_speed)
-        # print ('Target: ', self.pid.target, 'Error: ', self.pid.error, 'Gain: ', pid_gain)
-        # print ('Target Speed: ', target_speed_adjusted, 'Current Speed: ',
+        #print ('Target: ', self.pid.target, 'Error: ', self.pid.error, 'Gain: ', pid_gain)
+        #print ('Target Speed: ', target_speed_adjusted, 'Current Speed: ',
         #       current_speed, 'Speed Factor: ', speed_factor)
 
-        throttle = min(max(self.params['default_throttle'] - 1.3 * pid_gain, 0),
+        throttle = min( acc , max(self.params['default_throttle'] - 1.3 * pid_gain, 0),
                        self.params['throttle_max'])
 
         if pid_gain > 0.5:
-            brake = min(0.35 * pid_gain * self.params['brake_strength'], 1)
+            brake = max(brake , min(0.35 * pid_gain * self.params['brake_strength'], 1))
         else:
             brake = 0
-
-        control.throttle = max(throttle, 0)
+        if throttle > brake:
+            brake = 0
+        else:
+            throttle = 0
+        control.throttle = throttle#, acc)
         control.brake = brake
 
         # print ('Throttle: ', control.throttle, 'Brake: ',
         #       control.brake, 'Steering Angle: ', control.steer)
 
-        return control      
+        return control
+         

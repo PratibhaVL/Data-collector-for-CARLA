@@ -131,4 +131,64 @@ class CommandFollower(Agent):
                         
                                 })''' # Removed to speed up 
         return control, state
+    def get_wp_vectors(self, measurements, sensor_data, directions, target ):
+        """
+        The step function is where the action for the current simulation step is computed
+        The command follower uses several
+        Args:
+            measurements: carla measurements for all vehicles
+            sensor_data: the sensor that attached to this vehicle
+            directions: the planner directions to be used by the agent
+            target: the transform of the target.
 
+        Returns:
+            control for the agent, and an state of everything used for the computation,
+            for later plotting
+        """
+        # rename the variables from the player transform that are going to be used.
+        player = measurements.player_measurements
+        agents = measurements.non_player_agents
+        loc_x_player = player.transform.location.x
+        loc_y_player = player.transform.location.y
+        ori_x_player = player.transform.orientation.x
+        ori_y_player = player.transform.orientation.y
+        ori_z_player = player.transform.orientation.z
+
+        # use the waypointer class to compute the next position the agent should assume
+        waypoints_world, waypoints, route = self.waypointer.get_next_waypoints(
+            (loc_x_player, loc_y_player, 0.22), (ori_x_player, ori_y_player, ori_z_player),
+            (target.location.x, target.location.y, target.location.z),
+            (target.orientation.x, target.orientation.y, target.orientation.z)
+        )
+        if waypoints_world == []:
+            waypoints_world = [[loc_x_player, loc_y_player, 0.22]]
+
+        # Take a waypoint that is at a some distance proportional to
+        # the wp_num_steer parameter
+        wp = [waypoints_world[int(self.wp_num_steer * len(waypoints_world))][0],
+              waypoints_world[int(self.wp_num_steer * len(waypoints_world))][1]]
+
+        # Compute the agent location vector with respect to the taken waypoint
+        wp_vector, wp_mag = get_vec_dist(wp[0], wp[1], loc_x_player, loc_y_player)
+        # Compute the angle between ego-agent orientation and the vector between waypoint and agent
+        if wp_mag > 0:
+            wp_angle = get_angle(wp_vector, [ori_x_player, ori_y_player])
+        else:
+            wp_angle = 0
+
+        # Take a waypoint that is at a some distance proportional to
+        # the wp_num_steer parameter. Used to do the speed control
+        wp_speed = [waypoints_world[int(self.wp_num_speed * len(waypoints_world))][0],
+                    waypoints_world[int(self.wp_num_speed * len(waypoints_world))][1]]
+
+        wp_vector_speed, _ = get_vec_dist(wp_speed[0], wp_speed[1],
+                                                     loc_x_player,
+                                                     loc_y_player)
+
+        wp_angle_speed = get_angle(wp_vector_speed, [ori_x_player, ori_y_player])
+
+        state = {
+            'wp_angle': wp_speed,
+            'wp_angle_speed': wp_angle_speed
+        }
+        return state

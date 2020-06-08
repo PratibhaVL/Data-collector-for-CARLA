@@ -28,7 +28,7 @@ from carla.client import make_carla_client
 from carla.tcp import TCPConnectionError
 from carla_game.carla_game import CarlaGame
 from carla.planner import Planner
-from carla.agent import HumanAgent, ForwardAgent, CommandFollower, LaneFollower
+from carla.agent import HumanAgent, ForwardAgent, CommandFollower, LaneFollower,ImitationAgent
 
 import modules.data_writer as writer
 from modules.noiser import Noiser
@@ -52,6 +52,8 @@ def make_controlling_agent(args, town_name):
         Human Agent: An agent controlled by a human driver, currently only by keyboard.
 
     """
+    if args.controlling_agent == "ImitationAgent":
+        return ImitationAgent()
 
     if args.controlling_agent == "ForwardAgent":
         return ForwardAgent()
@@ -266,22 +268,24 @@ def collect(client, args):
     lane_checker = LaneChecker()
     ##### Start the episode #####
     random_episode = True
+    
+    
+    # We instantiate the agent, depending on the parameter
+    controlling_agent = make_controlling_agent(args, "Town01")
     # ! This returns all the aspects from the episodes.
     episode_aspects = reset_episode(client, carla_game,
                                     settings_module, args.debug , random_episode , {})
     planner = Planner(episode_aspects["town_name"])
-    # We instantiate the agent, depending on the parameter
-    controlling_agent = make_controlling_agent(args, episode_aspects["town_name"])
-
     # The noise object to add noise to some episodes is instanced
     #longitudinal_noiser = Noiser('Throttle', frequency=15, intensity=10, min_noise_time_amount=2.0)
     #lateral_noiser = Noiser('Spike', frequency=15, intensity=4, min_noise_time_amount=0.5)
 
-    #episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(args.episode_number ,settings_module)
-    #episode_aspects.update({
-    #'episode_lateral_noise': episode_lateral_noise,
-    #'episode_longitudinal_noise': episode_longitudinal_noise
-    #})
+    episode_lateral_noise, episode_longitudinal_noise = False , False#check_episode_has_noise(args.episode_number ,settings_module)
+    
+    episode_aspects.update({
+    'episode_lateral_noise': episode_lateral_noise,
+    'episode_longitudinal_noise': episode_longitudinal_noise
+    })
     if ENABLE_WRITER:
         ##### DATASET writer initialization #####
         # here we make the full path for the dataset that is going to be created.
@@ -304,122 +308,126 @@ def collect(client, args):
     maximum_episode = int(args.number_of_episodes) + int(args.episode_number)
     try:
         while carla_game.is_running() and episode_number < maximum_episode:
-            try:
-                # we add the vehicle and the connection outside of the game.
-                measurements, sensor_data = client.read_data()
+        
+            # we add the vehicle and the connection outside of the game.
+            measurements, sensor_data = client.read_data()
 
-                # run a step for the agent. regardless of the type
-                directions = get_directions(measurements,
-                                            episode_aspects['player_target_transform'], planner)
-                
-                control, controller_state = controlling_agent.run_step(measurements,
-                                                           sensor_data,
-                                                           [],
-                                                           episode_aspects['player_target_transform'] )
-                client.send_control(control)
-                controller_state.update({'directions': directions})
-                
-                # if this is a noisy episode, add noise to the controls 
-                # if autopilot is ON  curb all noises 
-                #TODO add a function here.
-                #if episode_longitudinal_noise and not enable_autopilot:
-                #    control_noise, _, _ = longitudinal_noiser.compute_noise(control,
-                #                                measurements.player_measurements.forward_speed * 3.6)
-                #else:
-                #    control_noise = control
+            # run a step for the agent. regardless of the type
+            directions = get_directions(measurements,
+                                        episode_aspects['player_target_transform'], planner)
+            
+            control, controller_state = controlling_agent.run_step(measurements,
+                                                       sensor_data,
+                                                       directions ,
+                                                       episode_aspects['player_target_transform'])
+            client.send_control(control)
+            controller_state.update({'directions': directions})
+            
+            # if this is a noisy episode, add noise to the controls 
+            # if autopilot is ON  curb all noises 
+            #TODO add a function here.
+            #if episode_longitudinal_noise and not enable_autopilot:
+            #    control_noise, _, _ = longitudinal_noiser.compute_noise(control,
+            #                                measurements.player_measurements.forward_speed * 3.6)
+            #else:
+            #    control_noise = control
 
-                #if episode_lateral_noise and not enable_autopilot:
-                #    control_noise_f, _, _ = lateral_noiser.compute_noise(control_noise,
-                #                                measurements.player_measurements.forward_speed * 3.6)
-                #else:
-                #    control_noise_f = control_noise
-
-
-                # Set the player position
-                # if you want to debug also render everything
-                '''if args.debug:
-                                                                    objects_to_render = controller_state.copy()
-                                                                    objects_to_render['player_transform'] = measurements.player_measurements.transform
-                                                                    objects_to_render['agents'] = measurements.non_player_agents
-                                                                    objects_to_render["draw_pedestrians"] = args.draw_pedestrians
-                                                                    objects_to_render["draw_vehicles"] = args.draw_vehicles
-                                                                    objects_to_render["draw_traffic_lights"] = args.draw_traffic_lights
-                                                                    # Comment the following two lines to see the waypoints and routes.
-                                                                    objects_to_render['waypoints'] = None
-                                                                    objects_to_render['route'] = None
-                                                
-                                                                    # Render with the provided map
-                                                                    carla_game.render(sensor_data['CameraRGB'], objects_to_render)
-                                                '''
-                # Check two important conditions for the episode, if it has ended
-                # and if the episode was a success
-                collided = collision_checker.test_collision(measurements.player_measurements)
-                lane_crossed = lane_checker.test_lane_crossing(measurements.player_measurements)
-                episode_ended =  collided or lane_crossed  or \
-                                carla_game.is_reset(measurements.player_measurements.transform.location)
-                episode_success = not (collided or lane_crossed )
+            #if episode_lateral_noise and not enable_autopilot:
+            #    control_noise_f, _, _ = lateral_noiser.compute_noise(control_noise,
+            #                                measurements.player_measurements.forward_speed * 3.6)
+            #else:
+            #    control_noise_f = control_noise
 
 
-                # Check if there is collision
-                # Start a new episode if there is a collision but repeat the same by not incrementing
-                # episode number.
+            # Set the player position
+            # if you want to debug also render everything
+            '''if args.debug:
+                                                                objects_to_render = controller_state.copy()
+                                                                objects_to_render['player_transform'] = measurements.player_measurements.transform
+                                                                objects_to_render['agents'] = measurements.non_player_agents
+                                                                objects_to_render["draw_pedestrians"] = args.draw_pedestrians
+                                                                objects_to_render["draw_vehicles"] = args.draw_vehicles
+                                                                objects_to_render["draw_traffic_lights"] = args.draw_traffic_lights
+                                                                # Comment the following two lines to see the waypoints and routes.
+                                                                objects_to_render['waypoints'] = None
+                                                                objects_to_render['route'] = None
+                                            
+                                                                # Render with the provided map
+                                                                carla_game.render(sensor_data['CameraRGB'], objects_to_render)
+                                            '''
+            # Check two important conditions for the episode, if it has ended
+            # and if the episode was a success
+            collided = collision_checker.test_collision(measurements.player_measurements)
+            lane_crossed = lane_checker.test_lane_crossing(measurements.player_measurements)
+            episode_ended =  collided or lane_crossed  or \
+                            carla_game.is_reset(measurements.player_measurements.transform.location)
+            episode_success = not (collided or lane_crossed )
 
-                if episode_ended:
-                    if episode_success:                   
-                        episode_aspects.update({"time_taken": measurements.game_timestamp / 1000.0})
-                        if ENABLE_WRITER:
-                            writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
-                                            episode_aspects)
-                        episode_number += 1
+
+            # Check if there is collision
+            # Start a new episode if there is a collision but repeat the same by not incrementing
+            # episode number.
+
+            if episode_ended:
+                if episode_success:                   
+                    episode_aspects.update({"time_taken": measurements.game_timestamp / 1000.0})
+                    if ENABLE_WRITER:
+                        writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),
+                                        episode_aspects)
+                    episode_number += 1
+                    random_episode = True
+                        
+                else:
+                    random_episode = False
+                    episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
+                    if len(episode_aspects['expert_points']) == 3: # if we repeated the same episode for 10 times skip it 
                         random_episode = True
-                            
-                    else:
-                        random_episode = False
-                        episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
-                        if len(episode_aspects['expert_points']) == 3: # if we repeated the same episode for 10 times skip it 
-                            random_episode = True
-                        if ENABLE_WRITER:
-                            writer.delete_episode(args.data_path, str(episode_number).zfill(5))
-                    episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
-                        episode_number,
-                        settings_module)
-                    # We reset the episode and receive all the characteristics of this episode.
-                    episode_aspects = reset_episode(client, carla_game,
-                                                    settings_module, args.debug , random_episode , episode_aspects)
-                    
-                    episode_aspects.update({'episode_lateral_noise': episode_lateral_noise,
-                                                'episode_longitudinal_noise': episode_longitudinal_noise
-                                                })
-                    
-                    # Reset the image count
-                    image_count = 0
-                    datapoint_count = 0
-                    lastTimeStamp = 0
-                if ENABLE_WRITER:
-                    if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
-                        # We do this to avoid the frames that the car is coming from the sky.
-                        writer.add_data_point(measurements, control, sensor_data,
-                                      controller_state,
-                                      args.data_path, str(episode_number).zfill(5),
-                                      str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
-                                      settings_module.sensors_frequency)
-                            
+                    if ENABLE_WRITER:
+                        writer.delete_episode(args.data_path, str(episode_number).zfill(5))
+                #episode_lateral_noise, episode_longitudinal_noise = check_episode_has_noise(
+                #    episode_number,
+                #    settings_module)
+                # We reset the episode and receive all the characteristics of this episode.
+                episode_aspects = reset_episode(client, carla_game,
+                                                settings_module, args.debug , random_episode , episode_aspects)
                 
-                # Add one more image to the counting
-                image_count += 1
+                episode_lateral_noise, episode_longitudinal_noise = False , False#check_episode_has_noise(args.episode_number ,settings_module)
 
-            except TCPConnectionError as error:
-                """
-                If there is any connection error we delete the current episode, 
-                This avoid incomplete episodes
-                """
-                import traceback
-                traceback.print_exc()
+                episode_aspects.update({
+                'episode_lateral_noise': episode_lateral_noise,
+                'episode_longitudinal_noise': episode_longitudinal_noise
+                })
+                                #episode_aspects.update({'episode_lateral_noise': episode_lateral_noise,
+                #                            'episode_longitudinal_noise': episode_longitudinal_noise
+                #                            })
+                
+                # Reset the image count
+                image_count = 0
+                datapoint_count = 0
+                lastTimeStamp = 0
+            if ENABLE_WRITER:
+                if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and not args.not_record:
+                    # We do this to avoid the frames that the car is coming from the sky.
+                    writer.add_data_point(measurements, control, sensor_data,
+                                  controller_state,
+                                  args.data_path, str(episode_number).zfill(5),
+                                  str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
+                                  settings_module.sensors_frequency)
+                        
+            
+            # Add one more image to the counting
+            image_count += 1
 
-                if not args.not_record and  ENABLE_WRITER :
-                    writer.delete_episode(args.data_path, str(episode_number).zfill(5))
+    except TCPConnectionError as error:
+        """
+        If there is any connection error we delete the current episode, 
+        This avoid incomplete episodes
+        """
+        import traceback
+        traceback.print_exc()
 
-                time.sleep(10)
+        if not args.not_record and  ENABLE_WRITER :
+            writer.delete_episode(args.data_path, str(episode_number).zfill(5))
 
     except KeyboardInterrupt:
         import traceback
@@ -465,7 +473,7 @@ def main():
         help=' Name of the data configuration file that should be place on .dataset_configurations')
     argparser.add_argument(
         '-c', '--controlling_agent',
-        default='CommandFollower',
+        default='ImitationAgent',
         help='the controller that is going to be used by the main vehicle.'
              ' Options: '
              ' HumanAgent - Control your agent with a keyboard.'

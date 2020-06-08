@@ -21,8 +21,7 @@ def write_json_measurements(episode_path, data_point_id, measurements, control,
                  'stop_pedestrian': state['stop_pedestrian'],
                  'stop_traffic_lights':state['stop_traffic_lights'],
                  'stop_vehicle': state['stop_vehicle'] ,
-                 'speed' : measurements.player_measurements.forward_speed}
-                     
+                 'speed' : measurements.player_measurements.forward_speed}         
         fo.write(json.dumps(data, sort_keys=True, indent=4))
 
 
@@ -100,6 +99,6 @@ def add_data_point(measurements, control, sensor_data, state,
 
 # Delete an episode in the case
 def delete_episode(dataset_path, episode_number):
-    
-    shutil.rmtree(os.path.join(dataset_path, 'episode_' + episode_number))
+    if os.path.exists(os.path.join(dataset_path, 'episode_' + episode_number)) :
+        shutil.rmtree(os.path.join(dataset_path, 'episode_' + episode_number))
     

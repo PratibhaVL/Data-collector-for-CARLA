@@ -52,7 +52,7 @@ class CommandFollower(Agent):
         self.obstacle_avoider = ObstacleAvoidance(self.param_obstacles,self.param_controller, town_name)
         self.controller = Controller(self.param_controller)
 
-    def run_step(self, measurements, sensor_data, directions, target ,autopilot):
+    def run_step(self, measurements, sensor_data, directions, target ):
         """
         The step function is where the action for the current simulation step is computed
         The command follower uses several
@@ -114,12 +114,8 @@ class CommandFollower(Agent):
                                                                     player.transform.orientation,
                                                                     wp_angle,
                                                                     wp_vector, agents)
-        if autopilot:
-            control =  self.controller.get_autopilot_control(wp_angle, wp_angle_speed, speed_factor,
-                                                  player.forward_speed*3.6, measurements )#measurements.player_measurements.autopilot_control
-        else:
-            # We should run some state machine around here
-            control = self.controller.get_control(wp_angle, wp_angle_speed, speed_factor,
+       
+        control = self.controller.get_control(wp_angle, wp_angle_speed, speed_factor,
                                                   player.forward_speed*3.6)
 
         # To draw the car fovs. The regions where it cares about obstacles.

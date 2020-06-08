@@ -32,14 +32,14 @@ sensors_frequency = {'CameraRGB': 1}
 sensors_yaw = {'CameraRGB': 0}
 # The percentage of episodes to have lateral noise. More information about the noise can
 # be found at docs/agent_module.md
-lat_noise_after = 1 
+lat_noise_after = 0
 # The percentage of episodes with longitudinal noise.
 long_noise_after = 0
 # The interval of vehicles/pedestrians that every episode can have
 NumberOfVehicles = [0, 20]  # The range for the random numbers that are going to be generated
 NumberOfPedestrians = [0, 20]
 
-set_of_weathers = [1, 3, 6, 8]
+set_of_weathers = [1]
 
 """
 Returns the entire CarlaSettings to be used on all the episodes.

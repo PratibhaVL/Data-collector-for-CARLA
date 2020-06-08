@@ -10,7 +10,7 @@ import numpy as np
 def _append_extension(filename, ext):
     return filename if filename.lower().endswith(ext.lower()) else filename + ext
 
-def write_json_measurements(episode_path, data_point_id, measurements, control, control_noise,
+def write_json_measurements(episode_path, data_point_id, measurements, control,
                             state):
 
     with open(os.path.join(episode_path, 'measurements_' + data_point_id.zfill(5) + '.json'), 'w') as fo:
@@ -88,14 +88,14 @@ def add_episode_metadata(dataset_path, episode_number, episode_aspects):
 
 
 
-def add_data_point(measurements, control, control_noise, sensor_data, state,
+def add_data_point(measurements, control, sensor_data, state,
                    dataset_path, episode_number, data_point_id, sensors_frequency):
 
     episode_path = os.path.join(dataset_path, 'episode_' + episode_number)
     if not os.path.exists(os.path.join(dataset_path, 'episode_' + episode_number)):
         os.mkdir(os.path.join(dataset_path, 'episode_' + episode_number))
     write_sensor_data(episode_path, data_point_id, sensor_data, sensors_frequency)
-    write_json_measurements(episode_path, data_point_id, measurements, control, control_noise,
+    write_json_measurements(episode_path, data_point_id, measurements, control,
                             state)
 
 # Delete an episode in the case

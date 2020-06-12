@@ -3,3 +3,4 @@ from .command_follower import CommandFollower
 from .lane_follower import LaneFollower
 from .human_agent import HumanAgent
 from .agent import Agent
+from .model_controller import ImitationAgent

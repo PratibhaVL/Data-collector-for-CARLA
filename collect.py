@@ -374,7 +374,7 @@ def collect(client, args):
             episode_ended =  collided or lane_crossed  or \
                             carla_game.is_reset(measurements.player_measurements.transform.location)
             episode_success = not (collided or lane_crossed )
-            if (currentTimeStamp-initialTimeStamp)/1000 > episode_aspects['timeout']:
+            if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and (currentTimeStamp-initialTimeStamp)/1000 > episode_aspects['timeout']:
                 episode_ended = True
                 episode_success = False
 

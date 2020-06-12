@@ -338,7 +338,7 @@ def collect(client, args):
                 if oracleCount >= MAX_CONTROL_TIME_TO_ORACLE:
                     switchToModelController = True
                     switchToOracle = False
-                    controlling_agent.param_controller['target_speed'] = oracle_agent.param_controller['target_speed']
+                    controlling_agent.command_follower.param_controller['target_speed'] = oracle_agent.param_controller['target_speed']
             elif switchToModelController:
                 control, controller_state = controlling_agent.run_step(measurements,
                                                            sensor_data,

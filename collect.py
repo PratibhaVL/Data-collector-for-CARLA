@@ -320,7 +320,7 @@ def collect(client, args):
                 switchToOracle = True
                 switchToModelController = False
                 oracleCount = 0
-                oracle_agent.param_controller['target_speed'] = controlling_agent.param_controller['target_speed']
+                oracle_agent.param_controller['target_speed'] = controlling_agent.command_follower.param_controller['target_speed']
 
             # we add the vehicle and the connection outside of the game.
             measurements, sensor_data = client.read_data()

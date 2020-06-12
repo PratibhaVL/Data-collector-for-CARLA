@@ -323,17 +323,16 @@ def collect(client, args):
                                                        episode_aspects['player_target_transform'])
             client.send_control(control)
             controller_state.update({'directions': directions})
-            print(controller_stateo)
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
                 controller_state['stop_traffic_lights']) == 0 :
                 episode_aspects['time_out']+= (measurements.game_timestamp - current_timestamp)/1000
             # Start the clock 
             if image_count == NUMBER_OF_FRAMES_CAR_FLIES:
-                initialTimeStamp = measurements.game_time_stamp
+                initialTimeStamp = measurements.game_timestamp
                 currentTimeStamp = initialTimeStamp
             # tick the clock
             if image_count > NUMBER_OF_FRAMES_CAR_FLIES:
-                currentTimeStamp = measurements.game_time_stamp
+                currentTimeStamp = measurements.game_timestamp
             # run a step for the agent. regardless of the type
             # if this is a noisy episode, add noise to the controls 
             # if autopilot is ON  curb all noises 

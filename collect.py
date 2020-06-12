@@ -239,6 +239,13 @@ def suppress_logs(episode_number):
                                        episode_number) + ".out"),
                       "a", buffering=1)
 
+def checkForTrafficInfraction(state , curr_speed):
+    if state['stop_traffic_lights'] == 0  and curr_speed > 10:
+        return True
+    if state['stop_traffic_lights'] == 1  and curr_speed <= 0  and min(state['stop_vehicle'] ,state['stop_pedestrian'] )== 1:
+        return True
+    return False
+         
 
 def collect(client, args):
     """
@@ -312,6 +319,8 @@ def collect(client, args):
     switchToModelController = True
     oracleCount = 0
     maximum_episode = int(args.number_of_episodes) + int(args.episode_number)
+    traffic_light_infraction = False
+    episode_timed_out = False
     try:
         while carla_game.is_running() and episode_number < maximum_episode:
             
@@ -344,7 +353,7 @@ def collect(client, args):
                                                            sensor_data,
                                                            directions ,
                                                            episode_aspects['player_target_transform'])
-                
+                traffic_light_infraction = checkForTraffficInfraction(controller_state , measurements.forward_speed*3.6):
             client.send_control(control)
             controller_state.update({'directions': directions})
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
@@ -394,19 +403,19 @@ def collect(client, args):
             # and if the episode was a success
             collided = collision_checker.test_collision(measurements.player_measurements)
             lane_crossed = lane_checker.test_lane_crossing(measurements.player_measurements)
-            episode_ended =  collided or lane_crossed  or \
-                            carla_game.is_reset(measurements.player_measurements.transform.location)
-            episode_success = not (collided or lane_crossed )
-            if image_count >= NUMBER_OF_FRAMES_CAR_FLIES and (currentTimeStamp-initialTimeStamp)/1000 > episode_aspects['timeout']:
-                episode_ended = True
-                episode_success = False
+            #episode_ended =  collided or lane_crossed  or \
+            #                carla_game.is_reset(measurements.player_measurements.transform.location)
+            #episode_success = not (collided or lane_crossed )
+            episode_timed_out =  image_count >= NUMBER_OF_FRAMES_CAR_FLIES and (currentTimeStamp-initialTimeStamp)/1000 > episode_aspects['timeout']:
+            #    episode_ended = True
+            #    episode_success = False
 
             # Check if there is collision
             # Start a new episode if there is a collision but repeat the same by not incrementing
             # episode number.
 
-            if episode_ended:
-                if episode_success:                   
+            if collided or lane_crossed or traffic_light_infraction or episode_timed_out or carla_game.is_reset(measurements.player_measurements.transform.location):
+                if not (collided or lane_crossed or traffic_light_infraction or episode_timed_out):                   
                     episode_aspects.update({"time_taken": measurements.game_timestamp / 1000.0})
                     if ENABLE_WRITER:
                         writer.add_episode_metadata(args.data_path, str(episode_number).zfill(5),

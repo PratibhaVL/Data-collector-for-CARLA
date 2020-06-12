@@ -325,7 +325,7 @@ def collect(client, args):
             controller_state.update({'directions': directions})
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
                 controller_state['stop_traffic_lights']) == 0 :
-                episode_aspects['time_out']+= (measurements.game_timestamp - current_timestamp)/1000
+                episode_aspects['timeout']+= (measurements.game_timestamp - current_timestamp)/1000
             # Start the clock 
             if image_count == NUMBER_OF_FRAMES_CAR_FLIES:
                 initialTimeStamp = measurements.game_timestamp

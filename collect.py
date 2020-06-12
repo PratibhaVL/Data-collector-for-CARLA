@@ -320,6 +320,7 @@ def collect(client, args):
                 switchToOracle = True
                 switchToModelController = False
                 oracleCount = 0
+                oracle_agent.param_controller['target_speed'] = controlling_agent.param_controller['target_speed']
 
             # we add the vehicle and the connection outside of the game.
             measurements, sensor_data = client.read_data()
@@ -337,6 +338,7 @@ def collect(client, args):
                 if oracleCount >= MAX_CONTROL_TIME_TO_ORACLE:
                     switchToModelController = True
                     switchToOracle = False
+                    controlling_agent.param_controller['target_speed'] = oracle_agent.param_controller['target_speed']
             elif switchToModelController:
                 control, controller_state = controlling_agent.run_step(measurements,
                                                            sensor_data,

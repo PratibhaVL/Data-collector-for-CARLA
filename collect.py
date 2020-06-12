@@ -239,7 +239,7 @@ def suppress_logs(episode_number):
                                        episode_number) + ".out"),
                       "a", buffering=1)
 
-def checkForTrafficInfraction(state , curr_speed):
+def checkForTraffficInfraction(state , curr_speed):
     if state['stop_traffic_lights'] == 0  and curr_speed > 10:
         return True
     if state['stop_traffic_lights'] == 1  and curr_speed <= 0  and min(state['stop_vehicle'] ,state['stop_pedestrian'] )== 1:
@@ -408,7 +408,7 @@ def collect(client, args):
             #episode_success = not (collided or lane_crossed )
             episode_timed_out =  image_count >= NUMBER_OF_FRAMES_CAR_FLIES and (currentTimeStamp-initialTimeStamp)/1000 > episode_aspects['timeout']
             #    episode_ended = True
-            #    episode_success = False
+            #    episode_success = False    
 
             # Check if there is collision
             # Start a new episode if there is a collision but repeat the same by not incrementing

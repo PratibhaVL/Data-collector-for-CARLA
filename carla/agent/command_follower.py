@@ -186,9 +186,12 @@ class CommandFollower(Agent):
                                                      loc_y_player)
 
         wp_angle_speed = get_angle(wp_vector_speed, [ori_x_player, ori_y_player])
-
-        state = {
-            'wp_angle': wp_speed,
-            'wp_angle_speed': wp_angle_speed
-        }
+        speed_factor, state = self.obstacle_avoider.stop_for_agents(player.transform.location,
+                                                                    player.transform.orientation,
+                                                                    wp_angle,
+                                                                    wp_vector, agents)
+        state.update({
+                    'wp_angle': wp_speed,
+                    'wp_angle_speed': wp_angle_speed
+                })
         return state

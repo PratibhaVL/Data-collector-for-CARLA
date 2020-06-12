@@ -323,6 +323,7 @@ def collect(client, args):
                                                        episode_aspects['player_target_transform'])
             client.send_control(control)
             controller_state.update({'directions': directions})
+            print(controller_stateo)
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
                 controller_state['stop_traffic_lights']) == 0 :
                 episode_aspects['time_out']+= (measurements.game_timestamp - current_timestamp)/1000

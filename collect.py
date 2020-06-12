@@ -313,6 +313,16 @@ def collect(client, args):
             # we add the vehicle and the connection outside of the game.
             measurements, sensor_data = client.read_data()
             # Increment timeout if car has stopped for a vali reason
+            
+            directions = get_directions(measurements,
+                                        episode_aspects['player_target_transform'], planner)
+            
+            control, controller_state = controlling_agent.run_step(measurements,
+                                                       sensor_data,
+                                                       directions ,
+                                                       episode_aspects['player_target_transform'])
+            client.send_control(control)
+            controller_state.update({'directions': directions})
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
                 controller_state['stop_traffic_lights']) == 0 :
                 episode_aspects['time_out']+= (measurements.game_timestamp - current_timestamp)/1000
@@ -324,16 +334,6 @@ def collect(client, args):
             if image_count > NUMBER_OF_FRAMES_CAR_FLIES:
                 currentTimeStamp = measurements.game_time_stamp
             # run a step for the agent. regardless of the type
-            directions = get_directions(measurements,
-                                        episode_aspects['player_target_transform'], planner)
-            
-            control, controller_state = controlling_agent.run_step(measurements,
-                                                       sensor_data,
-                                                       directions ,
-                                                       episode_aspects['player_target_transform'])
-            client.send_control(control)
-            controller_state.update({'directions': directions})
-            
             # if this is a noisy episode, add noise to the controls 
             # if autopilot is ON  curb all noises 
             #TODO add a function here.

@@ -305,13 +305,24 @@ def collect(client, args):
     datapoint_count = 0
     # The maximum episode is equal to the current episode plus the number of episodes you
     # want to run
+
     maximum_episode = int(args.number_of_episodes) + int(args.episode_number)
     try:
         while carla_game.is_running() and episode_number < maximum_episode:
         
             # we add the vehicle and the connection outside of the game.
             measurements, sensor_data = client.read_data()
-
+            # Increment timeout if car has stopped for a vali reason
+            if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
+                controller_state['stop_traffic_lights']) == 0 :
+                episode_aspects['time_out']+= (measurements.game_timestamp - current_timestamp)/1000
+            # Start the clock 
+            if image_count == NUMBER_OF_FRAMES_CAR_FLIES:
+                initialTimeStamp = measurements.game_time_stamp
+                currentTimeStamp = initialTimeStamp
+            # tick the clock
+            if image_count > NUMBER_OF_FRAMES_CAR_FLIES:
+                currentTimeStamp = measurements.game_time_stamp
             # run a step for the agent. regardless of the type
             directions = get_directions(measurements,
                                         episode_aspects['player_target_transform'], planner)
@@ -362,7 +373,9 @@ def collect(client, args):
             episode_ended =  collided or lane_crossed  or \
                             carla_game.is_reset(measurements.player_measurements.transform.location)
             episode_success = not (collided or lane_crossed )
-
+            if (currentTimeStamp-initialTimeStamp)/1000 > episode_aspects['timeout']:
+                episode_ended = True
+                episode_success = False
 
             # Check if there is collision
             # Start a new episode if there is a collision but repeat the same by not incrementing

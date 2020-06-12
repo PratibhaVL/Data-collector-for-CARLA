@@ -353,7 +353,7 @@ def collect(client, args):
                                                            sensor_data,
                                                            directions ,
                                                            episode_aspects['player_target_transform'])
-                traffic_light_infraction = checkForTraffficInfraction(controller_state , measurements.forward_speed*3.6):
+                traffic_light_infraction = checkForTraffficInfraction(controller_state , measurements.forward_speed*3.6)
             client.send_control(control)
             controller_state.update({'directions': directions})
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\

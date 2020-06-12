@@ -41,7 +41,7 @@ MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
 FRAMES_TO_REWIND = 5
-FRAMES_GIVEN_TO_ORACLE = 100
+MAX_CONTROL_TIME_TO_ORACLE = 100
 ENABLE_WRITER = True 
 #FILE_SIZE = 200
 
@@ -67,6 +67,8 @@ def make_controlling_agent(args, town_name):
     else:
         raise ValueError("Selected Agent Does not exist")
 
+def make_oracle( town_name):
+    return CommandFollower(town_name)
 
 def get_directions(measurements, target_transform, planner):
     """ Function to get the high level commands and the waypoints.
@@ -272,6 +274,7 @@ def collect(client, args):
     
     # We instantiate the agent, depending on the parameter
     controlling_agent = make_controlling_agent(args, "Town01")
+    oracle_agent = make_oracle("Town01")
     # ! This returns all the aspects from the episodes.
     episode_aspects = reset_episode(client, carla_game,
                                     settings_module, args.debug , random_episode , {})
@@ -305,11 +308,19 @@ def collect(client, args):
     datapoint_count = 0
     # The maximum episode is equal to the current episode plus the number of episodes you
     # want to run
-
+    switchToOracle = False
+    switchToModelController = True
+    oracleCount = 0
     maximum_episode = int(args.number_of_episodes) + int(args.episode_number)
     try:
         while carla_game.is_running() and episode_number < maximum_episode:
-        
+            
+            #Check for oracle handover
+            if image_count in episode_aspects['expert_points']:
+                switchToOracle = True
+                switchToModelController = False
+                oracleCount = 0
+
             # we add the vehicle and the connection outside of the game.
             measurements, sensor_data = client.read_data()
             # Increment timeout if car has stopped for a vali reason
@@ -317,15 +328,26 @@ def collect(client, args):
             directions = get_directions(measurements,
                                         episode_aspects['player_target_transform'], planner)
             
-            control, controller_state = controlling_agent.run_step(measurements,
+            if switchToOracle:
+                oracleCount+=1
+                control, controller_state = oracle_agent.run_step(measurements,
                                                        sensor_data,
                                                        directions ,
                                                        episode_aspects['player_target_transform'])
+                if oracleCount >= MAX_CONTROL_TIME_TO_ORACLE:
+                    switchToModelController = True
+                    switchToOracle = False
+            elif switchToModelController:
+                control, controller_state = controlling_agent.run_step(measurements,
+                                                           sensor_data,
+                                                           directions ,
+                                                           episode_aspects['player_target_transform'])
+                
             client.send_control(control)
             controller_state.update({'directions': directions})
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
                 controller_state['stop_traffic_lights']) == 0 :
-                episode_aspects['timeout']+= (measurements.game_timestamp - current_timestamp)/1000
+                episode_aspects['timeout']+= (measurements.game_timestamp - currentTimeStamp)/1000
             # Start the clock 
             if image_count == NUMBER_OF_FRAMES_CAR_FLIES:
                 initialTimeStamp = measurements.game_timestamp

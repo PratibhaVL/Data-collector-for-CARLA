@@ -338,9 +338,7 @@ def collect(client, args):
             directions = get_directions(measurements,
                                         episode_aspects['player_target_transform'], planner)
             
-            controller_state.update({'directions': directions , 
-                                      'modelControl': switchToModelController ,
-                                      'oracleControl': switchToOracle } )
+            
             if switchToOracle:
                 oracleCount+=1
                 control, controller_state = oracle_agent.run_step(measurements,
@@ -352,12 +350,15 @@ def collect(client, args):
                     switchToModelController = True
                     switchToOracle = False
                     controlling_agent.command_follower.param_controller['target_speed'] = oracle_agent.param_controller['target_speed']
-            elif switchToModelController:
+            if switchToModelController:
                 control, controller_state = controlling_agent.run_step(measurements,
                                                            sensor_data,
                                                            directions ,
                                                            episode_aspects['player_target_transform'])
                 traffic_light_infraction = False #checkForTraffficInfraction(controller_state , measurements.player_measurements.forward_speed*3.6)
+            controller_state.update({'directions': directions , 
+                                      'modelControl': switchToModelController ,
+                                      'oracleControl': switchToOracle } )
             client.send_control(control)
 
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\

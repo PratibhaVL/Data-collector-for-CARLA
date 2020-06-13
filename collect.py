@@ -330,7 +330,7 @@ def collect(client, args):
                 switchToModelController = False
                 oracleCount = 0
                 oracle_agent.param_controller['target_speed'] = controlling_agent.command_follower.param_controller['target_speed']
-
+                print("Switching control to Oracle controller" , image_count)
             # we add the vehicle and the connection outside of the game.
             measurements, sensor_data = client.read_data()
             # Increment timeout if car has stopped for a vali reason
@@ -345,6 +345,7 @@ def collect(client, args):
                                                        directions ,
                                                        episode_aspects['player_target_transform'])
                 if oracleCount >= MAX_CONTROL_TIME_TO_ORACLE:
+                    print("Switching control to Model based controller" , image_count)
                     switchToModelController = True
                     switchToOracle = False
                     controlling_agent.command_follower.param_controller['target_speed'] = oracle_agent.param_controller['target_speed']

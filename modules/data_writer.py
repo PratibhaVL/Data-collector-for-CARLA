@@ -22,9 +22,10 @@ def write_json_measurements(episode_path, data_point_id, measurements, control,
                      'stop_pedestrian': state['stop_pedestrian_pred'],
                      'stop_traffic_lights':state['stop_traffic_lights_pred'],
                      'stop_vehicle': state['stop_vehicle_pred'] ,
-                     'speed' : measurements.player_measurements.forward_speed},
+                     'speed' : measurements.player_measurements.forward_speed,
                      'model_control': state['modelControl'],
                      'oracle_control': state['oracleControl']        
+                     }
         else:
             data = {'steer':control.steer,
                     'throttle': control.throttle,

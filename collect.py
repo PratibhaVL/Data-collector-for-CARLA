@@ -338,6 +338,9 @@ def collect(client, args):
             directions = get_directions(measurements,
                                         episode_aspects['player_target_transform'], planner)
             
+            controller_state.update({'directions': directions , 
+                                      'modelControl': switchToModelController ,
+                                      'oracleControl': switchToOracle } )
             if switchToOracle:
                 oracleCount+=1
                 control, controller_state = oracle_agent.run_step(measurements,
@@ -356,9 +359,7 @@ def collect(client, args):
                                                            episode_aspects['player_target_transform'])
                 traffic_light_infraction = False #checkForTraffficInfraction(controller_state , measurements.player_measurements.forward_speed*3.6)
             client.send_control(control)
-            controller_state.update({'directions': directions , 
-                                      'modelControl': switchToModelController ,
-                                      'oracleControl': switchToOracle } )
+
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
                 controller_state['stop_traffic_lights']) == 0 :
                 episode_aspects['timeout']+= (measurements.game_timestamp - currentTimeStamp)/1000

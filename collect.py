@@ -40,8 +40,8 @@ MINI_WINDOW_WIDTH = 320
 MINI_WINDOW_HEIGHT = 180
 # This is the number of frames that the car takes to fall from the ground
 NUMBER_OF_FRAMES_CAR_FLIES = 25  # multiply by ten
-FRAMES_TO_REWIND = 5
-MAX_CONTROL_TIME_TO_ORACLE = 100
+FRAMES_TO_REWIND = 25
+MAX_CONTROL_TIME_TO_ORACLE = 150
 ENABLE_WRITER = True 
 #FILE_SIZE = 200
 
@@ -431,7 +431,7 @@ def collect(client, args):
                 else:
                     random_episode = False
                     episode_aspects['expert_points'].append(image_count- FRAMES_TO_REWIND)
-                    if len(episode_aspects['expert_points']) == 10: # if we repeated the same episode for 10 times skip it 
+                    if len(episode_aspects['expert_points']) == 5: # if we repeated the same episode for 10 times skip it 
                         random_episode = True
                     if ENABLE_WRITER:
                         writer.delete_episode(args.data_path, str(episode_number).zfill(5))

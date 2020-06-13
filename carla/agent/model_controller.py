@@ -117,7 +117,7 @@ class ImitationAgent(Agent):
         #print(f"Pred_ped_intent: {ped_intent} \tPred_veh_intent: {veh_intent} \tPred_tra_intent: {tra_intent} ")
         self.state.update({"stop_pedestrian_pred": ped_intent,
                     "stop_vehicle_pred":veh_intent,
-                    "stop_traffic_light_pred":tra_intent})
+                    "stop_traffic_lights_pred":tra_intent})
         return control
 
     def _control_function(self, image_input, speed, control_input):

@@ -356,7 +356,9 @@ def collect(client, args):
                                                            episode_aspects['player_target_transform'])
                 traffic_light_infraction = False #checkForTraffficInfraction(controller_state , measurements.player_measurements.forward_speed*3.6)
             client.send_control(control)
-            controller_state.update({'directions': directions})
+            controller_state.update({'directions': directions , 
+                                      'modelControl': switchToModelController ,
+                                      'oracleControl': switchToOracle } )
             if min(controller_state['stop_pedestrian'], controller_state['stop_vehicle'],\
                 controller_state['stop_traffic_lights']) == 0 :
                 episode_aspects['timeout']+= (measurements.game_timestamp - currentTimeStamp)/1000
@@ -459,7 +461,7 @@ def collect(client, args):
                                   controller_state,
                                   args.data_path, str(episode_number).zfill(5),
                                   str(image_count - NUMBER_OF_FRAMES_CAR_FLIES),
-                                  settings_module.sensors_frequency)
+                                  settings_module.sensors_frequency )
                         
             
             # Add one more image to the counting

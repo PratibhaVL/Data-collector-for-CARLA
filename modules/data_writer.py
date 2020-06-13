@@ -14,14 +14,29 @@ def write_json_measurements(episode_path, data_point_id, measurements, control,
                             state):
 
     with open(os.path.join(episode_path, 'measurements_' + data_point_id.zfill(5) + '.json'), 'w') as fo:
-        data = {'steer':control.steer,
-                'throttle': control.throttle,
-                 'brake': control.brake,
-                 'direction': state['directions'], 
-                 'stop_pedestrian': state['stop_pedestrian'],
-                 'stop_traffic_lights':state['stop_traffic_lights'],
-                 'stop_vehicle': state['stop_vehicle'] ,
-                 'speed' : measurements.player_measurements.forward_speed}         
+        if state['modelControl'] == True: # Add model intent signals if model is controlling vehicle 
+            data = {'steer':control.steer,
+                    'throttle': control.throttle,
+                     'brake': control.brake,
+                     'direction': state['directions'], 
+                     'stop_pedestrian': state['stop_pedestrian_pred'],
+                     'stop_traffic_lights':state['stop_traffic_lights_pred'],
+                     'stop_vehicle': state['stop_vehicle_pred'] ,
+                     'speed' : measurements.player_measurements.forward_speed},
+                     'model_control': state['modelControl'],
+                     'oracle_control': state['oracleControl']        
+        else:
+            data = {'steer':control.steer,
+                    'throttle': control.throttle,
+                     'brake': control.brake,
+                     'direction': state['directions'], 
+                     'stop_pedestrian': state['stop_pedestrian'],
+                     'stop_traffic_lights':state['stop_traffic_lights'],
+                     'stop_vehicle': state['stop_vehicle'] ,
+                     'speed' : measurements.player_measurements.forward_speed,
+                     'model_control': state['modelControl'],
+                     'oracle_control': state['oracleControl']
+                     }         
         fo.write(json.dumps(data, sort_keys=True, indent=4))
 
 

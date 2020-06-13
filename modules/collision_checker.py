@@ -7,7 +7,7 @@ class CollisionChecker(object):
         # The parameters used for the case we want to detect collisions
         self._thresh_other = 400
         self._thresh_vehicle = 400
-        self._thresh_pedestrian = 300
+        self._thresh_pedestrian = 150
         self._previous_pedestrian_collision = 0
         self._previous_vehicle_collision = 0
         self._previous_other_collision = 0

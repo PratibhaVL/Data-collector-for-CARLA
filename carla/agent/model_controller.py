@@ -115,9 +115,9 @@ class ImitationAgent(Agent):
         #print(f" True ped_intent: {self.state['stop_pedestrian']}\t True veh_intent: {self.state['stop_vehicle']} \t True tra_intent: {self.state['stop_traffic_lights']}")
         ped_intent , tra_intent , veh_intent = pred_intents
         #print(f"Pred_ped_intent: {ped_intent} \tPred_veh_intent: {veh_intent} \tPred_tra_intent: {tra_intent} ")
-        self.state.update({"stop_pedestrian_pred": ped_intent,
-                    "stop_vehicle_pred":veh_intent,
-                    "stop_traffic_lights_pred":tra_intent})
+        self.state.update({"stop_pedestrian_pred": ped_intent.item(),
+                    "stop_vehicle_pred":veh_intent.item(),
+                    "stop_traffic_lights_pred":tra_intent.item()})
         return control
 
     def _control_function(self, image_input, speed, control_input):

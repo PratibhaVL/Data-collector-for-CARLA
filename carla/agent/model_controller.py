@@ -62,7 +62,7 @@ class ImitationAgent(Agent):
         config_gpu.gpu_options.visible_device_list = '0'
         config_gpu.gpu_options.per_process_gpu_memory_fraction = memory_fraction
         self._sess = tf.Session(config=config_gpu)
-        self._models_path ="/home/pankaj/Trainer_module/trainer11/CARLAILtrainer/models/"#"D:/outbox/changed_old_trainer/trainer5/models/"#dir_path + '/model/'
+        self._models_path ="/home/pankaj/Trainer_module/CARLAILtrainer/models/"#"D:/outbox/changed_old_trainer/trainer5/models/"#dir_path + '/model/'
         self._sess.run(tf.global_variables_initializer())
         #self.load_model()
         with tf.device('/gpu:0'):
@@ -152,7 +152,7 @@ class ImitationAgent(Agent):
                pred_intent[0][i] = 1   
             elif pred_intent[0][i] <= 0.05:
                pred_intent[0][i] = 0
-        if predicted_speed[0] > 0.3 and curr_speed < 0.1: #False braking
+        if (predicted_speed *3.6 *MAX_SPEED )> 5 and (speed *3.6 *MAX_SPEED) <  5: #False braking
             #print("False braking !!!!")
             predicted_acc = 0.5
             predicted_brake = 0

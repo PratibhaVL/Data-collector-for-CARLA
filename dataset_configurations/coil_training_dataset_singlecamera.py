@@ -10,23 +10,7 @@ WINDOW_HEIGHT = 600
 #Positions a vector of tuples containing the [START, END] positions
 #of the episodes that the (expert driver)[docs/agent_module.md] is going to follow. The
 #possible positions for agent placement can be viewed by running
-POSITIONS = [[61, 49],
- [127, 71],
- [43, 60],
- [116, 42],
- [66, 3],
- [145, 16],
- [79, 14],
- [74, 71],
- [26, 69],
- [143, 132],
- [51, 42],
- [77, 0],
- [46, 67],
- [108, 5],
- [69, 84],
- [23, 79],
- [110, 35]]
+POSITIONS = [[130, 27], [44, 24], [134, 140], [129, 148], [51, 42], [145, 16], [64, 111], [81, 37], [8, 145], [107, 43], [111, 61], [105, 137], [77, 0], [32, 12], [64, 3], [40, 33], [127, 71], [110, 35], [85, 91], [114, 93], [30, 7], [11, 98], [96, 49], [90, 85], [97, 41], [110, 62], [116, 95], [50, 71], [15, 97], [101, 52], [23, 79], [79, 14], [39, 53], [66, 3], [20, 79], [14, 56], [26, 69], [79, 19], [5, 57], [77, 68], [70, 73], [46, 67], [21, 12], [71, 127], [51, 49], [35, 110], [91, 85], [7, 30], [43, 60], [98, 11], [49, 96], [85, 90], [41, 97], [114, 138], [76, 131], [95, 116], [71, 50], [74, 71], [133, 50], [52, 101], [108, 5], [79, 23]]
 
 # The FOV for all the cameras
 FOV = 100
@@ -40,7 +24,7 @@ lat_noise_after = 0
 # The percentage of episodes with longitudinal noise.
 long_noise_after = 0
 # The interval of vehicles/pedestrians that every episode can have
-NumberOfVehicles = [0, 20]  # The range for the random numbers that are going to be generated
+NumberOfVehicles = [0, 40]  # The range for the random numbers that are going to be generated
 NumberOfPedestrians = [40, 60]
 
 set_of_weathers = [1]
